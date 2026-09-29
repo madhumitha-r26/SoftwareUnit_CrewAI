@@ -1,152 +1,80 @@
 # SoftwareUnit
 
-SoftwareUnit is an AI-powered software delivery workflow built with CrewAI. It orchestrates a team of specialized agents to turn a project idea into structured planning, architecture, design, QA, and deployment artifacts.
-
-The project is designed around a practical product development scenario: a Simple Task Management System. Instead of manually creating all planning documents by hand, the system coordinates multiple agents to collaborate on each stage of the lifecycle.
-
-## Overview
-
-This project demonstrates how multiple LLM-powered agents can work together in sequence to:
-
-- define the project plan
-- capture business requirements
-- design the system architecture
-- draft UI/UX specifications
-- produce backend and frontend implementation guidance
-- evaluate quality with QA testing
-- prepare deployment and infrastructure documentation
-
-The workflow is implemented in Python and uses CrewAI agents and tasks, with file outputs generated into the `output/` folder.
-
-## Project Goals
-
-The primary goal of this project is to simulate a small software team:
-
-- Project Manager for roadmap and execution oversight
-- Business Analyst for requirements and user stories
-- Solution Architect for technical design
-- UI/UX Designer for screens and UX guidance
-- Backend Developer for API and service design
-- Frontend Developer for interface implementation
-- QA Engineer for validation and testing
-- DevOps Engineer for deployment planning
-
-## Architecture of the Project
-
-The application is composed of a few core files:
-
-- `main.py` – entry point; creates the crew and runs the workflow
-- `agents.py` – defines all AI agents and their roles
-- `tasks.py` – defines each project phase and expected output
-- `tools.py` – contains tools used by the agents, including file writing
-- `output/` – generated project artifacts and reports
+SoftwareUnit is a Python application that uses CrewAI to coordinate a virtual software team. Given a project idea, the crew prepares project documentation, implementation files, QA tests, and deployment artifacts.
 
 ## Workflow
 
-When the app runs, it creates a sequential Crew with the agents above and executes the following tasks:
+`main.py` runs the crew with `Process.sequential`. The tasks cover:
 
 1. Project planning
-2. Requirements definition
-3. Architecture design
-4. UI/UX design
-5. Backend generation tasks
-6. Frontend generation tasks
-7. QA testing and review
-8. Deployment documentation
+2. Business requirements
+3. System architecture and API design
+4. UI/UX specification
+5. Backend implementation
+6. Frontend implementation
+7. QA report and test files
+8. Deployment artifacts
 
-The project uses `Process.sequential`, meaning the workflow progresses in an ordered chain where downstream tasks depend on earlier outputs.
+The sample project idea is currently set in `main.py` to `A Simple Task Management System`. Change the `project_idea` input there to generate a different project.
 
-## Generated Outputs
+## Agents
 
-The project writes structured documents into the `output/` directory:
+- Project Manager: project plan
+- Business Analyst: requirements and user stories
+- Solution Architect: architecture and API contract
+- UI/UX Designer: written design specification
+- Backend Developer: backend source and configuration
+- Frontend Developer: frontend source and configuration
+- QA Engineer: QA report and test files
+- DevOps Engineer: deployment artifacts
 
-- `output/01_project_plan.md` – project roadmap, timeline, risks, resource allocation
-- `output/02_requirements.md` – business requirements and acceptance criteria
-- `output/03_architecture.md` – technical architecture and system design
-- `output/04_ui_design.md` – UX flow and interface design guidance
-- `output/05_qa_report.md` – QA matrix and test planning
-- `output/06_deployment.md` – infrastructure and release configuration
+The UI/UX task currently produces a written specification. It does not generate image files or scrape web resources.
 
-## Features
+## Generated Files
 
-- Multi-agent project generation
-- Role-based AI collaboration
-- Markdown output for software deliverables
-- Sequential workflow execution
-- File-based artifact creation
-- Adaptable idea-to-document pipeline for new product concepts
+All generated files are placed under `output/`:
 
-## Tech Stack
+```text
+output/
+  documentation/
+    01_project_plan.md
+    02_requirements.md
+    03_architecture.md
+    04_ui_design.md
+    05_qa_report.md
+    06_deployment.md
+  backend/       # Generated backend source and configuration
+  frontend/      # Generated frontend source and configuration
+  tests/         # Generated QA test files
+  deployment/    # Generated deployment files
+```
 
-- Python
-- CrewAI
-- CrewAI Tools
-- Ollama LLM integration
+`main.py` creates `output/documentation/` before starting. The file-writing tool is restricted to the `output/` directory; the backend, frontend, test, and deployment tasks use the corresponding subdirectories.
 
-## Prerequisites
+The generated programming languages and frameworks depend on the architecture selected for the project. They are not fixed by this workflow.
 
-Before running the project, make sure you have:
+## Requirements
 
 - Python 3.10 or newer
-- Access to a working Python environment
-- Ollama installed locally
-- The model configured for the agents, such as `ollama/gemma4:31b-cloud`
+- Ollama installed and available
+- The model used by the agents configured in Ollama; the current agent configuration uses `ollama/gemma4:31b-cloud`
+- CrewAI and CrewAI Tools installed in the active Python environment
 
-## Getting Started
+## Run
 
-### 1. Activate the virtual environment
-
-On Windows PowerShell:
+In Windows PowerShell, activate the included environment and run the workflow:
 
 ```powershell
 .\dev_unit\Scripts\Activate.ps1
-```
-
-### 2. Install dependencies
-
-If the environment does not already contain them, install the required packages:
-
-```powershell
 pip install crewai crewai-tools
+python .\main.py
 ```
 
-If you are using Ollama, make sure the required model is available in your local Ollama setup.
+The application prints the final crew result to the console and writes task artifacts under `output/`.
 
-### 3. Run the project
+## Project Files
 
-```powershell
-python main.py
-```
-
-This will start the multi-agent workflow and generate the project documentation under `output/`.
-
-## Example Use Case
-
-The current project idea is:
-
-> A Simple Task Management System
-
-The generated outputs reflect a realistic MVP for task creation, editing, status tracking, filtering, soft deletion, and deployment readiness.
-
-## Notes
-
-This project is useful as a learning and prototyping example for:
-
-- AI agent orchestration
-- agentic software planning
-- automated documentation generation
-- AI-assisted product development workflows
-
-## License
-
-This project does not currently include a formal license file. Add a license if you plan to share or distribute the project publicly.
-
-## Future Improvements
-
-Possible enhancements include:
-
-- adding a configurable project idea input from CLI arguments
-- supporting different project domains beyond task management
-- integrating actual backend/frontend code generation
-- adding automated tests for the workflow itself
-- extending the pipeline with GitHub Actions or deployment automation
+- `main.py` creates and runs the CrewAI crew.
+- `agents.py` defines the agent roles and Ollama model configuration.
+- `tasks.py` defines each workflow task, output path, and task dependencies.
+- `tools.py` configures the CrewAI file writer, sandboxed to `output/`.

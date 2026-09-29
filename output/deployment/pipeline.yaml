@@ -1,0 +1,83 @@
+name: STMS CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python for Backend Tests
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      
+      - name: Run Backend Tests
+        run: |
+          pip install pytest requests
+          pytest tests/test_api.py
+
+      - name: Set up Node for Frontend Tests
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Run Frontend Tests
+        run: |
+          cd frontend && npm install && npm test
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./backend
+          file: ./deployment/backend.Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}/stms-api:latest
+
+      - name: Build and Push Frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: ./frontend
+          file: ./deployment/frontend.Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}/stms-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set Kubernetes Context
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: Deploy to K8s
+        run: |
+          sed -i "s/\${IMAGE_TAG}/ghcr.io\/${{ github.repository }}/g" deployment/k8s-api.yaml
+          sed -i "s/\${IMAGE_TAG}/ghcr.io\/${{ github.repository }}/g" deployment/k8s-frontend.yaml
+          kubectl apply -f deployment/k8s-api.yaml
+          kubectl apply -f deployment/k8s-frontend.yaml
+          kubectl rollout restart deployment/stms-api
+          kubectl rollout restart deployment/stms-frontend
