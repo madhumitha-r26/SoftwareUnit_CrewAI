@@ -1,166 +1,147 @@
-# UI/UX Design Specification: Simple Task Management System (STMS)
+# UI/UX Design Specification: Simple Task Management System (MVP)
 
-**Designer:** Senior UI/UX Designer  
-**Project:** STMS MVP  
-**Goal:** Maximize task completion rates and user satisfaction through a frictionless, high-contrast, and accessible interface.
+**Prepared by:** UI/UX Design Lead  
+**Version:** 1.0  
+**Objective:** Maximize user satisfaction and task completion rates through an intuitive, frictionless, and visually coherent interface.
 
 ---
 
 ## 1. User Journey Maps
 
-### 1.1 The "First-Time User" Journey (Onboarding)
-**Goal:** Get the user from "Zero to First Task" in under 60 seconds.
+### Journey A: The "Fresh Start" (Onboarding & First Task)
+*Goal: Minimize time-to-value by guiding the user from zero to their first saved task.*
 
-| Step | Action | User Emotion | Touchpoint | Design Intent |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Signs up with email/pass | Hopeful | Sign-up Page | Minimize friction; avoid unnecessary fields. |
-| 2 | Logs in for first time | Expectant | Login Page | Immediate feedback upon successful auth. |
-| 3 | Lands on Dashboard | Curious/Empty | Dashboard | **Empty State:** Use an illustration to guide the user to "Create Task." |
-| 4 | Clicks "Add Task" | Focused | Modal/Form | Clear focus states; intuitive "Save" action. |
-| 5 | Sees task in list | Satisfied | Task List | Visual confirmation (Toast notification) of success. |
+| Stage | Action | User Emotion | UX Goal/Touchpoint |
+| :--- | :--- | :--- | :--- |
+| **Entry** | Lands on Landing/Login page. | Curious/Neutral | Clear value prop; Low-friction Auth (Clerk). |
+| **Auth** | Completes Sign-up/Login. | Focused | Minimal fields; instant redirection. |
+| **Landing** | Arrives at empty Dashboard. | Slightly Overwhelmed | **Empty State:** Warm welcome + "Create Task" CTA. |
+| **Action** | Clicks "Add Task" $\rightarrow$ fills form. | Intentional | Modal-based entry to maintain context. |
+| **Success** | Saves task $\rightarrow$ sees it in list. | Satisfied/Accomplished | Immediate visual feedback (Optimistic UI). |
 
-### 1.2 The "Daily Management" Journey (Maintenance)
-**Goal:** Efficiently triage and update tasks with minimal clicks.
+### Journey B: The "Daily Grind" (Task Lifecycle)
+*Goal: Reduce cognitive load and interaction cost for repetitive management.*
 
-| Step | Action | User Emotion | Touchpoint | Design Intent |
-| :--- | :--- | :--- | :--- | :--- |
-| 1 | Reviews Task List | Overwhelmed | Dashboard | Clear typography and spacing to reduce cognitive load. |
-| 2 | Filters by "Pending" | Focused | Filter Tabs | Instant UI update (no page reload) using state management. |
-| 3 | Marks Task Complete | Accomplished | Checkbox | Tactile feedback (strikethrough + opacity shift). |
-| 4 | Edits Task Detail | Intentional | Edit Modal | Contextual editing; "Cancel" button to prevent accidental changes. |
-| 5 | Logs out | Finished | Nav Menu | Secure session termination. |
+| Stage | Action | User Emotion | UX Goal/Touchpoint |
+| :--- | :--- | :--- | :--- |
+| **Review** | Logs in $\rightarrow$ Scans list. | Analytical | Visual hierarchy based on Due Date. |
+| **Completion** | Toggles "Complete" checkbox. | Gratification | Visual "Strike-through" + subtle animation. |
+| **Adjustment** | Edits a deadline. | Corrective | Inline editing or slide-over panel for speed. |
+| **Cleanup** | Deletes irrelevant task. | Decisive | Confirmation dialog to prevent accidental loss. |
 
 ---
 
 ## 2. Low-Fidelity Wireframe Layouts
 
-### 2.1 Authentication Pages (Sign-Up/Login)
-*Centric layout to focus user attention.*
+### 2.1 Dashboard (Main View)
+The layout follows a "Command Center" pattern: Sidebar for navigation/filters and a central feed for tasks.
 
 ```markdown
-__________________________________________________________
-|                                                        |
-|                    [ STMS LOGO ]                       |
-|                                                        |
-|                ____________________                    |
-|               |    Welcome Back    |                   |
-|               |____________________|                   |
-|               |  Email: [_______] |                   |
-|               |  Pass:   [_______] |                   |
-|               |____________________|                   |
-|               |     [ LOGIN ]      |                   |
-|               |____________________|                   |
-|                                                        |
-|               Don't have an account? [Sign Up]         |
-|________________________________________________________|
++-----------------------------------------------------------------------+
+| [Logo] TaskFlow          [Search Tasks...]            (User Profile V) |
++-----------------------------------------------------------------------+
+|  SIDEBAR          |  MAIN CONTENT AREA                                 |
+|                   |                                                   |
+|  FILTERS          |  My Tasks                               [+ Add Task]|
+|  [ ] All Tasks    |  ------------------------------------------------- |
+|  [ ] Work         |  [ ] Task Title - Category [Work]    (Due: Oct 12)  |
+|  [ ] Personal     |      Description text goes here...      [Edit][Del]|
+|  [ ] Urgent       |  ------------------------------------------------- |
+|                   |  [x] ~~Finished Task~~ [Personal]   (Due: Oct 10)  |
+|  STATUS           |      Completed on Oct 09                [Edit][Del]|
+|  ( ) Pending      |  ------------------------------------------------- |
+|  ( ) Completed    |                                                   |
+|                   |  [ Empty State Illustration if no tasks ]         |
+|  [Settings]       |  "You're all caught up! Relax or add a new task."  |
++-----------------------------------------------------------------------+
 ```
 
-### 2.2 Dashboard (Main View)
-*A clean, single-column focus for tasks with a persistent "Add" action.*
+### 2.2 "Add/Edit Task" Modal
+A centered overlay to keep the user in their current flow without a full page reload.
 
 ```markdown
-__________________________________________________________
-|  STMS Logo        [Search Tasks...]       (User Icon) [Logout] |
-|________________________________________________________|
-|                                                        |
-|  My Tasks                                [ + New Task ] |
-|  ____________________________________________________  |
-|  |  [All]  [Pending]  [Completed]                     | |
-|  |____________________________________________________| |
-|                                                        |
-|  [ ] Task Title 1 ....................... [Edit] [Del]   |
-|  [ ] Task Title 2 ....................... [Edit] [Del]   |
-|  [x] ~~Task Title 3 (Completed)~~ ......... [Edit] [Del]   |
-|  [ ] Task Title 4 ....................... [Edit] [Del]   |
-|                                                        |
-|                   ( Load More Tasks )                  |
-|________________________________________________________|
-```
-
-### 2.3 Task Detail/Edit Modal
-*Overlays the dashboard to maintain context.*
-
-```markdown
-__________________________________________________________
-|                                                        |
-|            ________________________________            |
-|           | Task Details                [X] |           |
-|           |________________________________|           |
-|           | Title:                                     |
-|           | [ Enter task title...               ]       |
-|           |                                             |
-|           | Description:                               |
-|           | [ Enter detailed notes...           ]       |
-|           | [                                   ]       |
-|           |                                             |
-|           | Status: ( ) Pending  ( ) Completed         |
-|           |____________________________________|           |
-|           | [ Cancel ]            [ Save Task ] |           |
-|           |____________________________________|           |
-|                                                        |
-|________________________________________________________|
++-----------------------------------------------------------+
+|  Add New Task                                          [X] |
+|  --------------------------------------------------------- |
+|  Title*                                                    |
+|  [ Enter task name...                                   ] |
+|                                                           |
+|  Description                                              |
+|  [ Enter details...                                     ] |
+|                                                           |
+|  Deadline*                 Category                       |
+|  [ MM/DD/YYYY ]            [ Select Category V ]          |
+|                                                           |
+|  --------------------------------------------------------- |
+|                                     [ Cancel ] [ Save Task ]|
++-----------------------------------------------------------+
 ```
 
 ---
 
 ## 3. Design System Tokens
 
-### 3.1 Color Palette (High Contrast & Accessible)
+### 3.1 Color Palette (Psychology: Focus & Trust)
+*Using a clean, high-contrast palette to reduce visual noise.*
+
 | Token | Hex Code | Usage | Psychology |
 | :--- | :--- | :--- | :--- |
-| **Primary** | `#2563EB` | Primary Buttons, Active States | Trust, Focus |
-| **Success** | `#16A34A` | Completed Status, Success Toasts | Achievement |
-| **Danger** | `#DC2626` | Delete Buttons, Error Borders | Caution, Alert |
-| **Neutral-900**| `#111827` | Primary Text, Headings | Stability, Readability |
-| **Neutral-500**| `#6B7280` | Secondary Text, Placeholders | Subtle, Unobtrusive |
-| **Surface** | `#F9FAFB` | App Background | Cleanliness |
-| **White** | `#FFFFFF` | Cards, Modals | Separation |
+| `Primary-600` | `#2563EB` | Primary Buttons, Active States | Trust, Professionalism |
+| `Success-500` | `#10B981` | Completion Toggle, Success Alerts | Achievement, Calm |
+| `Danger-500` | `#EF4444` | Delete Buttons, Overdue Dates | Urgency, Caution |
+| `Neutral-900` | `#111827` | Primary Text, Headings | Clarity, Grounding |
+| `Neutral-100` | `#F3F4F6` | Page Backgrounds, Borders | Space, Breathability |
+| `Accent-500` | `#F59E0B` | "Urgent" Category Tag | Attention, Priority |
 
 ### 3.2 Typography
-*Using a clean Sans-Serif stack (Inter or system-default).*
-*   **H1 (Page Title):** 24px | Bold | Line-height: 1.2 | Color: Neutral-900
-*   **Body (Standard):** 16px | Regular | Line-height: 1.5 | Color: Neutral-900
-*   **Caption/Secondary:** 14px | Regular | Line-height: 1.4 | Color: Neutral-500
-*   **Button Text:** 14px | Semi-Bold | Uppercase (Optional) | Color: White
+*San-serif for maximum readability across all screen sizes.*
 
-### 3.3 Spacing & Radius
-*   **Spacing Scale:** 4px base (4, 8, 16, 24, 32, 64).
-*   **Border Radius:** 
-    *   `sm` (4px): Checkboxes, Small Inputs.
-    *   `md` (8px): Buttons, Cards.
-    *   `lg` (12px): Modals, Main Containers.
+| Element | Font Family | Weight | Size | Line Height |
+| :--- | :--- | :--- | :--- | :--- |
+| **H1 (Page Title)** | Inter / System UI | 700 (Bold) | 24px | 1.2 |
+| **H2 (Section)** | Inter / System UI | 600 (Semi) | 18px | 1.4 |
+| **Body (Task)** | Inter / System UI | 400 (Reg) | 14px | 1.5 |
+| **Caption (Date)** | Inter / System UI | 500 (Med) | 12px | 1.2 |
 
----
-
-## 4. Accessibility (WCAG 2.1 Guidelines)
-
-To ensure inclusivity and maximize task completion for all users:
-
-1.  **Contrast Ratio:** All text-to-background ratios will exceed **4.5:1** (AA Standard).
-2.  **Keyboard Navigation:** 
-    *   All interactive elements (inputs, buttons) must have a visible `:focus` ring (Primary blue).
-    *   `Tab` order will follow the visual flow (Top $\rightarrow$ Bottom, Left $\rightarrow$ Right).
-3.  **Aria Labels:** 
-    *   Icon-only buttons (e.g., the "X" to close a modal) must have `aria-label="Close Modal"`.
-    *   Form errors must be linked to inputs via `aria-describedby`.
-4.  **Visual Cues:** Task completion will not be indicated by color alone (Green); it will include a **strikethrough** and a **checkmark icon**.
+### 3.3 Spacing & Grid
+*Based on an 8px soft grid to ensure mathematical consistency.*
+- **XS:** 4px | **S:** 8px | **M:** 16px | **L:** 24px | **XL:** 32px
+- **Border Radius:** `8px` for cards/inputs; `full` for category tags.
 
 ---
 
-## 5. Interaction Flow Diagram
+## 4. Interaction Flow Diagram
 
-### 5.1 Logical Pathing
+**Task Creation & Filter Flow:**
+`Login` $\rightarrow$ `Dashboard` $\rightarrow$ `Click [+ Add Task]` $\rightarrow$ `Input Data` $\rightarrow$ `Click [Save]` $\rightarrow$ `API Call (Wait <200ms)` $\rightarrow$ `UI Update (Toast Notification: "Task Added")` $\rightarrow$ `Dashboard (Refresh List)`.
 
-**Auth Flow:**
-`Guest` $\rightarrow$ `Sign Up` $\rightarrow$ `Login` $\rightarrow$ `JWT Storage (LocalStorage/Cookie)` $\rightarrow$ `Dashboard`.
+**Filter Interaction:**
+`Click [Category: Work]` $\rightarrow$ `UI Transition (Fade out others)` $\rightarrow$ `Display Work-only tasks` $\rightarrow$ `Click [All Tasks]` $\rightarrow$ `UI Transition (Fade in all)`.
 
-**Task Life Cycle:**
-1.  **Create:** `Click [+ New Task]` $\rightarrow$ `Input Data` $\rightarrow$ `POST /tasks` $\rightarrow$ `Update Local State` $\rightarrow$ `Success Toast`.
-2.  **Update Status:** `Click Checkbox` $\rightarrow$ `PATCH /tasks/:id` $\rightarrow$ `UI Transition (Strikethrough)` $\rightarrow$ `Optimistic UI Update`.
-3.  **Edit:** `Click [Edit]` $\rightarrow$ `Open Modal` $\rightarrow$ `PUT /tasks/:id` $\rightarrow$ `Close Modal` $\rightarrow$ `Refresh List`.
-4.  **Delete:** `Click [Delete]` $\rightarrow$ `Confirmation Dialog` $\rightarrow$ `DELETE /tasks/:id` $\rightarrow$ `Animate Row Slide-out` $\rightarrow$ `Remove from DOM`.
+---
 
-### 5.2 Error State Handling
-*   **Empty State:** `If (tasks.length === 0)` $\rightarrow$ Render `EmptyStateComponent` (Illustration + "Create Task" button).
-*   **Validation Error:** `If (title === "")` $\rightarrow$ Shake animation on input + Red border + Message "Title is required."
-*   **Auth Error:** `If (401/403)` $\rightarrow$ Clear token $\rightarrow$ Redirect to `/login` $\rightarrow$ Toast "Session expired. Please login again."
+## 5. Accessibility (WCAG 2.1) Guidelines
+
+To ensure inclusivity and accessibility, the following standards are mandated:
+
+1.  **Contrast:** All text must maintain a contrast ratio of at least **4.5:1** against its background (WCAG AA).
+2.  **Keyboard Navigation:**
+    *   Full `Tab` index flow: Header $\rightarrow$ Sidebar $\rightarrow$ Main List $\rightarrow$ Modal.
+    *   `Enter` to trigger buttons; `Esc` to close modals.
+3.  **ARIA Labels:** 
+    *   Buttons with icons only (e.g., Trash icon) must have `aria-label="Delete Task"`.
+    *   Input fields must be linked to labels via `for` attributes.
+4.  **Visual Cues:** 
+    *   Do not rely on color alone to indicate status (e.g., an overdue task should have a Red color **and** a "Late" text badge).
+5.  **Focus States:** All interactive elements must have a visible `:focus-visible` ring (Primary-600, 2px offset).
+
+---
+
+## 6. Interaction Specifications (Edge Case Handling)
+
+| Event | UX Interaction | Technical Logic |
+| :--- | :--- | :--- |
+| **Save Button Click** | Button enters "Loading" state (spinner). | Debounce click $\rightarrow$ disable button until API response. |
+| **Past Date Entry** | Input border turns `Danger-500` + Tooltip appears. | Real-time JS validation $\rightarrow$ Block "Save" button. |
+| **Task Deletion** | Modal: "Are you sure you want to delete this task?" | Confirmation Dialog $\rightarrow$ Soft delete $\rightarrow$ Optimistic UI removal. |
+| **Session Expiry** | Overlay: "Session Expired. Please login to save changes." | LocalStorage cache of current form input $\rightarrow$ Re-auth $\rightarrow$ Restore input. |

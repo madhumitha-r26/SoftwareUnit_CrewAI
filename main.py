@@ -33,8 +33,9 @@ async def main():
         verbose=True
     )
 
+    project=input("Enter the project idea:")
     result = await dev_crew.kickoff_async(
-            inputs={"project_idea": "A Simple Task Management System"}
+            inputs={"project_idea": project}
     )
     print("\n\n========== FINAL OUTPUT ==========")
     print(result)

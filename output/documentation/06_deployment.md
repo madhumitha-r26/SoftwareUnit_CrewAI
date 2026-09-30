@@ -1,27 +1,28 @@
-As a DevOps Engineer, I have established a production-ready deployment suite for the Simple Task Management System (STMS). To ensure maximum release velocity and system uptime, I have implemented a container-first strategy using multi-stage Docker builds, Kubernetes manifests for resilient orchestration, and a GitHub Actions pipeline that enforces a strict "Test $\rightarrow$ Build $\rightarrow$ Deploy" workflow.
+I have completed the creation of the deployment files for the Task Management System. As a DevOps Engineer, my priority was to eliminate "midnight deployment panics" by implementing a fully automated, containerized pipeline with health checks and resource constraints to ensure maximum uptime and release velocity.
 
-The following files have been created in the `deployment/` directory:
+The following files have been created in the `deployment` directory:
 
-### 1. Containerization (`backend.Dockerfile`, `frontend.Dockerfile`)
-I used **multi-stage builds** to minimize the attack surface and reduce image size. 
-- The backend image strips away build-time dependencies, leaving only the production Node.js runtime.
-- The frontend image utilizes a lightweight Nginx Alpine image to serve the React static assets, ensuring low latency for the end-user.
+### 1. Containerization (`backend.Dockerfile` & `frontend.Dockerfile`)
+- **Backend**: Utilizes a multi-stage build to keep the production image lean. It compiles TypeScript in the `builder` stage and only copies the `dist` folder and production dependencies to the final image, reducing the attack surface and image size.
+- **Frontend**: Uses a multi-stage build to compile the React/Next.js application and serves the final static assets via a lightweight Nginx alpine image for optimal delivery performance.
 
-### 2. Infrastructure as Code (`k8s-api.yaml`, `k8s-frontend.yaml`)
-The Kubernetes manifests ensure high availability and reliability:
-- **Replicas**: Set to 2 by default to ensure zero downtime during rolling updates and fault tolerance across availability zones.
-- **Resource Constraints**: Defined CPU/Memory limits and requests to prevent "noisy neighbor" syndromes and ensure predictable scheduling on the cluster.
-- **Secret Management**: API credentials (DB URL, JWT Secrets) are injected via `secretKeyRef` rather than plain text, adhering to security best practices.
+### 2. Infrastructure as Code (`backend-k8s.yaml` & `frontend-k8s.yaml`)
+- **Resilience**: The backend is configured with 3 replicas across the cluster to ensure high availability.
+- **Health Monitoring**: Implemented `livenessProbe` on the backend to automatically restart unhealthy containers.
+- **Resource Governance**: Explicit `cpu` and `memory` limits/requests are defined to prevent "noisy neighbor" syndromes and ensure stable performance under load.
+- **Security**: Database credentials and JWT secrets are mapped via `SecretKeyRef` rather than hardcoded in the manifest.
 
 ### 3. CI/CD Pipeline (`pipeline.yaml`)
-The GitHub Actions pipeline is the engine for painless releases:
-- **Automated Quality Gate**: The `test` job executes both the Python-based API security tests (validating the "Anti-Leak" pattern) and the React frontend tests. If any test fails, the pipeline halts, preventing broken code from reaching production.
-- **Automated Container Registry**: Images are automatically tagged and pushed to the GitHub Container Registry (GHCR) upon successful tests on the `main` branch.
-- **Zero-Downtime Deployment**: The `deploy` job updates the K8s manifests and triggers a `rollout restart`, ensuring that the new version is healthy before the old pods are terminated.
+- **Automation**: A GitHub Actions workflow that triggers on pushes to `main` or `develop`.
+- **Safety Gates**: The pipeline follows a strict **Test $\rightarrow$ Build $\rightarrow$ Push $\rightarrow$ Deploy** flow. If `npm test` fails for either the frontend or backend, the deployment is blocked.
+- **Immutability**: Images are tagged with the `github.sha` commit hash, ensuring that exactly what was tested is what gets deployed and allowing for instant rollbacks to previous known-good versions.
+- **Parallelism**: Uses a build matrix to test and build the frontend and backend concurrently, minimizing the time from commit to production.
 
-**Final Content of `deployment/`:**
-- `backend.Dockerfile`: Optimized Node.js production build.
-- `frontend.Dockerfile`: Nginx-based static asset delivery.
-- `k8s-api.yaml`: K8s Deployment and Service for the Backend.
-- `k8s-frontend.yaml`: K8s Deployment and Service for the Frontend.
-- `pipeline.yaml`: Full CI/CD orchestration (Test $\rightarrow$ Build $\rightarrow$ Push $\rightarrow$ Deploy).
+### Summary of Deployment Artifacts:
+| File | Purpose | Key Feature |
+| :--- | :--- | :--- |
+| `backend.Dockerfile` | API Containerization | Multi-stage build, Node 18 Alpine |
+| `frontend.Dockerfile` | UI Containerization | Nginx static serving, Optimized build |
+| `backend-k8s.yaml` | API Infrastructure | 3 Replicas, Liveness Probes, Secret mapping |
+| `frontend-k8s.yaml` | UI Infrastructure | LoadBalancer service, Resource limits |
+| `pipeline.yaml` | Automation | GitHub Actions, Matrix Build, SHA-tagging |

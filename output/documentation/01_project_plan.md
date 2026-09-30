@@ -1,59 +1,55 @@
-# Project Plan: Simple Task Management System (STMS)
+# Project Plan: Simple Task Management System (MVP)
 
 **Project Manager:** Rose  
-**Objective:** Deliver a scalable, intuitive, and secure Task Management System on time and within budget, focusing on core CRUD functionality and high system reliability.
+**Objective:** Deliver a secure, performant, and responsive MVP task management system on time and within scope, ensuring a seamless user experience and a maintainable technical foundation.
 
 ---
 
 ## 1. Milestone Timeline
-The project is scheduled for a **4-week rapid delivery cycle** to achieve a Minimum Viable Product (MVP).
+The project is estimated to span **10 weeks** from kickoff to deployment. This timeline accounts for the "Modular Monolith" architecture and the specific functional requirements identified.
 
-| Milestone | Phase | Key Deliverables | Timeline | Status |
+| Milestone | Phase | Duration | Key Deliverables | Timeline |
 | :--- | :--- | :--- | :--- | :--- |
-| **M1: Foundation** | Design & Setup | DB Schema, API Scaffolding, Auth System, Environment Setup | Week 1 | 📅 Planned |
-| **M2: Core Engine** | Backend Dev | Task CRUD Endpoints, Filtering/Sorting Logic, API Documentation | Week 2 | 📅 Planned |
-| **M3: User Interface** | Frontend Dev | Responsive Dashboard, Task Forms, API Integration, State Mgmt | Week 3 | 📅 Planned |
-| **M4: Hardening** | QA & Launch | End-to-End Testing, Bug Fixing, CI/CD Pipeline, Production Deploy | Week 4 | 📅 Planned |
+| **M1: Foundation** | Planning & Setup | Week 1 | Architecture Document, CI/CD Pipeline, DB Schema, Environment Setup. | Week 1 |
+| **M2: Core Engine** | Backend Development | Week 2-4 | Auth integration (Clerk/Auth0), Task CRUD APIs, Category/Deadline Logic. | Week 2-4 |
+| **M3: Interface** | Frontend Development | Week 5-7 | Responsive UI (React/Tailwind), State Management, API Integration. | Week 5-7 |
+| **M4: Hardening** | QA & Optimization | Week 8-9 | Integration Testing, Performance Tuning (<200ms latency), Bug Fixing. | Week 8-9 |
+| **M5: Delivery** | Deployment & Handover | Week 10 | Production Release (AWS App Runner), User Documentation, Project Sign-off. | Week 10 |
 
 ---
 
 ## 2. Resource Allocation Breakdown
-To maintain lean operations and prevent "bloat," the following resource distribution is allocated:
+To maintain velocity without adding unnecessary management overhead, the project will utilize a lean, high-impact team.
 
-### Personnel
-| Role | Primary Focus | Allocation | Key Responsibility |
-| :--- | :--- | :--- | :--- |
-| **Project Manager (Rose)** | Coordination & Blockers | 50% | Timeline tracking, stakeholder alignment, risk mitigation. |
-| **Backend Developer** | API & Data Integrity | 100% | NestJS implementation, PostgreSQL schema, JWT Security. |
-| **Frontend Developer** | UX & Integration | 100% | React/Tailwind UI, TanStack Query integration, Responsive design. |
-| **QA Engineer** | Validation | 50% (Wk 3-4) | Functional testing, Regression, Performance validation. |
-| **DevOps Engineer** | Infrastructure | 25% (Wk 1 & 4) | AWS Setup, GitHub Actions pipeline, Deployment. |
-
-### Technical Stack
-*   **Frontend:** React, Tailwind CSS, Vite, TanStack Query.
-*   **Backend:** Node.js, TypeScript, NestJS.
-*   **Database:** PostgreSQL (via Prisma ORM).
-*   **Infrastructure:** AWS (ECS Fargate/RDS), Vercel, GitHub Actions.
+| Role | Allocation | Primary Responsibilities |
+| :--- | :--- | :--- |
+| **Project Manager (Rose)** | 50% | Timeline tracking, blocker removal, stakeholder alignment, scope control. |
+| **Solution Architect** | 20% | Technical oversight, schema validation, infrastructure auditing. |
+| **Backend Developer** | 100% | NestJS API development, PostgreSQL management, Auth integration, Redis setup. |
+| **Frontend Developer** | 100% | React/Tailwind implementation, Responsive Design, API consumption. |
+| **QA Engineer** | 50% | Manual/Automated testing, User Acceptance Testing (UAT), Performance validation. |
+| **DevOps Engineer** | 20% | AWS App Runner/RDS configuration, CI/CD pipeline maintenance. |
 
 ---
 
 ## 3. Critical Path Analysis
-The critical path identifies the sequence of tasks that must be completed on time to prevent a project delay.
+The critical path represents the sequence of stages that determine the minimum project duration. Any delay in these tasks will directly push back the launch date.
 
-**Path: DB Schema $\rightarrow$ Auth Implementation $\rightarrow$ Task CRUD API $\rightarrow$ Frontend Integration $\rightarrow$ QA $\rightarrow$ Deployment.**
+**The Critical Path:**
+`Requirement Finalization` $\rightarrow$ `DB Schema Design` $\rightarrow$ `Backend API (Auth & CRUD)` $\rightarrow$ `Frontend API Integration` $\rightarrow$ `Integration Testing` $\rightarrow$ `Production Deployment`.
 
-*   **High-Risk Dependency:** The Frontend Developer cannot begin meaningful integration (M3) until the Backend Developer delivers the API Contract and Auth endpoints (M1/M2).
-*   **Bottleneck Mitigation:** To prevent the Frontend Developer from idling in Week 2, they will work on **UI Mockups and Static Components** using a mock API (JSON Server) while the actual backend is being built.
-*   **Critical Constraint:** The database schema must be finalized by Day 3. Any change to the `Task` entity after Week 2 will cause a cascading delay in both Frontend and QA phases.
+*   **Dependency Bottleneck:** The Frontend Developer cannot complete the "Interface" phase until the Backend Developer delivers the stable API endpoints for Task CRUD and Auth.
+*   **Risk Point:** Integration of the third-party Auth provider (Clerk/Auth0). If this stalls, both backend and frontend progress on protected routes will stop.
+*   **Mitigation:** The Backend Developer will provide **API Mocks** (using Swagger/OpenAPI) in Week 2 so the Frontend Developer can build the UI shells in parallel with the actual logic.
 
 ---
 
-## 4. Risk-Mitigation Register
+## 4. Categorized Risk-Mitigation Register
 
 | Category | Risk | Impact | Probability | Mitigation Strategy |
 | :--- | :--- | :--- | :--- | :--- |
-| **Scope** | **Scope Creep:** Stakeholders request "Advanced Features" (e.g., Calendar view, Collaborators) mid-sprint. | High | High | **Strict MVP Freeze:** Any new feature requests are moved to a "Version 2.0" backlog. Only critical bugs are addressed in the current cycle. |
-| **Technical** | **Performance Lag:** Dashboard slows down as the number of tasks increases. | Medium | Low | **Indexing & Pagination:** Implement DB indexing on `user_id` and `title`. Use API pagination to ensure the frontend never loads $>100$ tasks at once. |
-| **Security** | **Data Leakage:** Users accessing tasks of other users via IDOR (URL manipulation). | Critical | Medium | **Middleware Validation:** Implement a strict ownership check in the NestJS service layer: `WHERE task.id = :id AND task.user_id = :currentUser`. |
-| **Timeline** | **Integration Friction:** Frontend and Backend types mismatch during Week 3. | Medium | Medium | **TypeScript Shared Types:** Use a shared interface library or Prisma-generated types to ensure the API contract is strictly enforced on both ends. |
-| **Infrastructure**| **Deployment Failure:** Issues with AWS environment configuration during final launch. | High | Low | **Early Staging:** Deploy a "Hello World" version to the staging environment in Week 1 to validate the CI/CD pipeline immediately. |
+| **Scope** | **Feature Creep:** Stakeholders requesting "just one more thing" (e.g., shared folders). | High | High | Strict adherence to the MVP Requirements Document. All new requests are logged in a "V2 Backlog" for post-launch review. |
+| **Technical** | **Performance Lag:** API response times exceeding the <200ms target. | Medium | Low | Implementation of Redis caching for frequent reads and PostgreSQL indexing on `user_id` and `due_date`. |
+| **Technical** | **Auth Integration Issues:** Third-party auth provider downtime or configuration errors. | High | Medium | Implement a clean "Auth Wrapper" service in the backend; if the provider fails, we can swap it with minimal code changes. |
+| **Resources** | **Developer Burnout:** High pressure during the "Hardening" phase. | Medium | Medium | Buffer of 1 week included in the overall timeline; daily stand-ups to identify burnout early and redistribute tasks. |
+| **Operational** | **AWS Misconfiguration:** Scaling issues or security leaks in RDS/App Runner. | High | Low | DevOps Engineer to perform a security audit and "Load Test" in a staging environment before the M5 deployment. |

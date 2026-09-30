@@ -1,38 +1,47 @@
 # SoftwareUnit
 
-SoftwareUnit is a Python application that uses CrewAI to coordinate a virtual software team. Given a project idea, the crew prepares project documentation, implementation files, QA tests, and deployment artifacts.
+SoftwareUnit is a CrewAI-based project generation workflow that turns a single project idea into a complete software delivery package. It coordinates a virtual team of specialized agents to produce documentation, implementation files, QA artifacts, and deployment assets under the `output/` folder.
 
-## Workflow
+## What the application does
 
-`main.py` runs the crew with `Process.sequential`. The tasks cover:
+When you run `python .\main.py`, the program prompts for a project idea and then kicks off a sequential CrewAI workflow. The agents work through the following stages:
 
 1. Project planning
 2. Business requirements
-3. System architecture and API design
-4. UI/UX specification
+3. Architecture and API design
+4. UI/UX design specification
 5. Backend implementation
 6. Frontend implementation
-7. QA report and test files
-8. Deployment artifacts
+7. QA report and automated test generation
+8. Deployment assets and CI/CD configuration
 
-The sample project idea is currently set in `main.py` to `A Simple Task Management System`. Change the `project_idea` input there to generate a different project.
+The project idea is entered at runtime instead of being hardcoded in the application. This means each run can generate a different product concept without changing the workflow code.
 
-## Agents
+## Current implementation
 
-- Project Manager: project plan
-- Business Analyst: requirements and user stories
-- Solution Architect: architecture and API contract
-- UI/UX Designer: written design specification
-- Backend Developer: backend source and configuration
-- Frontend Developer: frontend source and configuration
-- QA Engineer: QA report and test files
-- DevOps Engineer: deployment artifacts
+The current code is structured as follows:
 
-The UI/UX task currently produces a written specification. It does not generate image files or scrape web resources.
+- `main.py` creates the `output/documentation` directory, assembles the crew, and starts the asynchronous kickoff.
+- `tasks.py` defines all task descriptions, context dependencies, and output locations for the generated artifacts.
+- `agents.py` configures the project roles and uses the Ollama model `ollama/gemma4:31b-cloud`.
+- `tools.py` exposes a `FileWriterTool` restricted to the `output/` directory so generated code and files remain sandboxed within the project.
 
-## Generated Files
+## Agent roles
 
-All generated files are placed under `output/`:
+- Project Manager: creates the project plan and milestone structure
+- Business Analyst: defines requirements, user stories, and acceptance criteria
+- Solution Architect: designs the system architecture and API contract
+- UI/UX Designer: creates the product design and interaction specification
+- Backend Developer: writes backend source and configuration into `output/backend`
+- Frontend Developer: writes frontend source and configuration into `output/frontend`
+- QA Engineer: produces the QA report and test files under `output/tests`
+- DevOps Engineer: generates deployment manifests and pipeline definitions under `output/deployment`
+
+The UI/UX task focuses on a written design spec rather than generated images or web-scraped assets.
+
+## Generated output structure
+
+All generated artifacts are stored under `output/`:
 
 ```text
 output/
@@ -43,26 +52,24 @@ output/
     04_ui_design.md
     05_qa_report.md
     06_deployment.md
-  backend/       # Generated backend source and configuration
-  frontend/      # Generated frontend source and configuration
-  tests/         # Generated QA test files
-  deployment/    # Generated deployment files
+  backend/        # Backend implementation files
+  frontend/       # Frontend implementation files
+  tests/          # Test scripts and QA assets
+  deployment/     # Deployment manifests, Docker files, and pipeline YAML
 ```
 
-`main.py` creates `output/documentation/` before starting. The file-writing tool is restricted to the `output/` directory; the backend, frontend, test, and deployment tasks use the corresponding subdirectories.
-
-The generated programming languages and frameworks depend on the architecture selected for the project. They are not fixed by this workflow.
+The exact frameworks and languages used depend on the architecture selected by the agent workflow; the system does not lock the project to one specific stack.
 
 ## Requirements
 
 - Python 3.10 or newer
-- Ollama installed and available
-- The model used by the agents configured in Ollama; the current agent configuration uses `ollama/gemma4:31b-cloud`
-- CrewAI and CrewAI Tools installed in the active Python environment
+- Ollama installed and available locally
+- A compatible model available in Ollama; the current configuration uses `ollama/gemma4:31b-cloud`
+- `crewai` and `crewai-tools` installed in the active Python environment
 
-## Run
+## Run it locally
 
-In Windows PowerShell, activate the included environment and run the workflow:
+From the project root in Windows PowerShell:
 
 ```powershell
 .\dev_unit\Scripts\Activate.ps1
@@ -70,11 +77,18 @@ pip install crewai crewai-tools
 python .\main.py
 ```
 
-The application prints the final crew result to the console and writes task artifacts under `output/`.
+You will be prompted to enter a project idea, and the workflow will generate the documentation and implementation artifacts under `output/`.
 
-## Project Files
+## Project files
 
-- `main.py` creates and runs the CrewAI crew.
-- `agents.py` defines the agent roles and Ollama model configuration.
-- `tasks.py` defines each workflow task, output path, and task dependencies.
-- `tools.py` configures the CrewAI file writer, sandboxed to `output/`.
+- `main.py`: entry point; creates the crew and runs the workflow
+- `agents.py`: defines all agent roles and LLM configuration
+- `tasks.py`: defines task flow, context, and output paths
+- `tools.py`: configures the file-writing tool used by the implementation agents
+- `output/`: generated project artifacts and generated code
+
+## Notes
+
+- The workflow is designed for code generation and project scaffolding, not for running a prebuilt app directly.
+- The backend and frontend tasks are configured to write complete implementation files into their respective output directories.
+- The generated output should be reviewed and adjusted as needed before using it as a production project foundation.

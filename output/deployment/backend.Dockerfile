@@ -1,17 +1,23 @@
-# Build Stage for Dockerized Backend
-FROM node:18-alpine as build
+# Dockerfile for Backend (Node.js/TypeScript)
+FROM node:18-alpine AS builder
+
 WORKDIR /app
+
+# Copy package files first to leverage Docker layer caching
 COPY package*.json ./
 RUN npm install
+
+# Copy source and build
 COPY . .
-RUN npm run build # Assuming a build step for TypeScript/NestJS
+RUN npm run build
 
-# Production Stage
+# Production stage
 FROM node:18-alpine
-WORKDIR /app
-COPY --from=build /app/package*.json ./
-RUN npm install --only=production
-COPY --from=build /app/dist ./dist 
 
-EXPOSE 3000
-CMD ["node", "dist/server.js"]
+WORKDIR /app
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/dist ./dist
+RUN npm install --production
+
+EXPOSE 8080
+CMD ["node", "dist/index.js"]
