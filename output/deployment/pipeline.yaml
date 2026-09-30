@@ -1,0 +1,85 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          cd backend && npm install
+          cd ../frontend && npm install
+
+      - name: Run Backend Tests
+        run: cd backend && npm test
+
+      - name: Run Frontend Tests
+        run: cd frontend && npm test
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: deployment/backend.Dockerfile
+          push: true
+          tags: userauth/backend:latest
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: deployment/frontend.Dockerfile
+          push: true
+          tags: userauth/frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set Kubernetes Context
+        uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+
+      - name: Deploy Infrastructure
+        run: kubectl apply -f deployment/infra-k8s.yaml
+
+      - name: Deploy Backend
+        run: kubectl apply -f deployment/backend-k8s.yaml
+
+      - name: Deploy Frontend
+        run: kubectl apply -f deployment/frontend-k8s.yaml
+
+      - name: Restart Deployments
+        run: |
+          kubectl rollout restart deployment/auth-backend
+          kubectl rollout restart deployment/auth-frontend

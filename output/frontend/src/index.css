@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bgMain text-textMain font-sans antialiased;
+  }
+}
+
+@layer components {
+  .input-field {
+    @apply w-full px-4 py-2 border border-borderMain rounded-lg outline-none transition-all 
+           focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:bg-gray-100 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply w-full py-3 px-4 bg-primary hover:bg-primary-dark text-white font-semibold 
+           rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .label-text {
+    @apply block text-sm font-medium text-textMain mb-1;
+  }
+
+  .helper-text {
+    @apply text-xs text-textMuted mt-1 leading-relaxed;
+  }
+
+  .error-text {
+    @apply text-xs font-medium text-error mt-1;
+  }
+}
