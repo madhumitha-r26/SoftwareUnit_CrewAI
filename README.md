@@ -79,7 +79,7 @@ python .\main.py
 
 You will be prompted to enter **a project idea**, and the workflow will generate the documentation and implementation artifacts under `output/`.
 
-Here, I have developed the automation workflow for **"User Authentication Module"**
+Here, I have given the project idea as **"User Authentication Module"**. The output file contains the generated documentation and implementation for the given project idea.
 
 ## Project files
 
