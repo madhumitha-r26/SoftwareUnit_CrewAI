@@ -1,4 +1,4 @@
-# SoftwareUnit
+# SoftwareUnit - Autonomous AI Workflow Automation
 
 SoftwareUnit is a CrewAI-based project generation workflow that turns a single project idea into a complete software delivery package. It coordinates a virtual team of specialized agents to produce documentation, implementation files, QA artifacts, and deployment assets under the `output/` folder.
 
@@ -77,7 +77,9 @@ pip install crewai crewai-tools
 python .\main.py
 ```
 
-You will be prompted to enter a project idea, and the workflow will generate the documentation and implementation artifacts under `output/`.
+You will be prompted to enter **a project idea**, and the workflow will generate the documentation and implementation artifacts under `output/`.
+
+Here, I have developed the automation workflow for **"User Authentication Module"**
 
 ## Project files
 
@@ -85,7 +87,8 @@ You will be prompted to enter a project idea, and the workflow will generate the
 - `agents.py`: defines all agent roles and LLM configuration
 - `tasks.py`: defines task flow, context, and output paths
 - `tools.py`: configures the file-writing tool used by the implementation agents
-- `output/`: generated project artifacts and generated code
+- `output/`: generated project artifacts and generated code 
+
 
 ## Notes
 
