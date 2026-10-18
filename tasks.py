@@ -19,9 +19,9 @@ requirements_task = Task(
 )
 
 architecture_task = Task(
-    description="Design the architecture and API contract for the requirements.",
-    expected_output="A High-Level Architecture (HLA) document detailing component interaction diagrams "
-    "(text/Mermaid), chosen technology stack with trade-off rationale, data flow schemas, and non-functional requirements (scalability, security, latency).",
+    description="Design the architecture and API contract for the requirements. This project must use React.js with Tailwind CSS for the frontend, Node.js with Express.js for the backend, and MongoDB for persistence. Treat this MERN stack as fixed; do not substitute other frontend frameworks, backend runtimes/frameworks, or databases. Define compatible service boundaries and API contracts, and plan for Docker-based deployment.",
+    expected_output="A High-Level Architecture (HLA) document for the required MERN stack detailing component interaction diagrams "
+    "(text/Mermaid), React.js/Tailwind CSS frontend, Node.js/Express.js backend, MongoDB data models and connection, API contracts, data flows, Docker deployment boundaries, and non-functional requirements (scalability, security, latency).",
     agent=solution_architect,
     context=[requirements_task],
     output_file="output/documentation/03_architecture.md",
@@ -40,9 +40,11 @@ design_task = Task(
 
 backend_task = Task(
     description="Implement the backend following the architecture and API contract. "
+                "Use Node.js with Express.js and MongoDB only; do not use Python, SQL databases, or another backend framework. "
+                "Implement MongoDB persistence consistent with the architecture and expose the documented API. "
                 "Write complete, runnable source and configuration files into the output/backend folder using the file writer tool. Use directory='backend' and sensible filenames; do not return code only in your response.",
-    expected_output="A working backend implementation saved as source files, including API routes, " 
-    "with OpenAPI/Swagger definitions, database entity-relationship models, and secure authentication/error-handling flows.",
+    expected_output="A working Node.js/Express.js backend backed by MongoDB, saved as runnable source and configuration files, including API routes, "
+    "OpenAPI/Swagger definitions, MongoDB models or schemas, environment-based configuration, and secure authentication/error-handling flows.",
     agent=backend_developer,
     context=[architecture_task],
     async_execution=True,   # runs in parallel with the frontend task
@@ -50,9 +52,11 @@ backend_task = Task(
 
 frontend_task = Task(
     description="Implement the frontend following the UI design and API contract. "
+                "Use React.js and Tailwind CSS; do not use another UI framework or styling framework. "
+                "Integrate with the Node.js/Express.js API defined by the architecture. "
                 "Write complete, runnable source and configuration files into the output/frontend folder using the file writer tool. Use directory='frontend' and sensible filenames; do not return code only in your response.",
     expected_output="A working responsive frontend implementation saved as source files, " 
-    "featuring responsive layout structures, state management patterns, and integration points for backend API endpoints.",
+    "built with React.js and Tailwind CSS, featuring responsive layouts, state management, and integration with the documented backend API.",
     agent=frontend_developer,
     context=[design_task, architecture_task],
     async_execution=True,   # runs in parallel with the backend task
@@ -60,9 +64,10 @@ frontend_task = Task(
 
 qa_task = Task(
     description="Review the backend and frontend code against the requirements and "
+                "verify that the implementation uses the required React.js/Tailwind CSS frontend and Node.js/Express.js/MongoDB backend. "
                 "write executable test files into output/tests using the file writer tool with directory='tests', in addition to the QA report.",
     expected_output="A detailed QA test suite and execution matrix including manual test cases, " 
-    "automated test scripts (e.g., Pytest/Playwright/Jest specs), edge case coverage,"
+    "automated tests appropriate for the React.js and Node.js implementation (e.g., Vitest, Jest, or Playwright), edge case coverage,"
     "and a defect tracking template.",
     agent=qa_engineer,
     context=[requirements_task, backend_task, frontend_task],  # waits for both
@@ -70,10 +75,8 @@ qa_task = Task(
 )
 
 deploy_task = Task(
-    description="Create deployment files for the application under output/deployment using the file writer tool with directory='deployment'.",
-    expected_output="Complete Infrastructure as Code (IaC) templates and CI/CD pipeline definitions "
-    "(e.g., GitHub Actions YAML or Dockerfile/Kubernetes manifests) with automated build, test, and "
-    "containerized deployment stages.",
+    description="Create a Docker-based deployment for the React.js/Tailwind CSS frontend, Node.js/Express.js backend, and MongoDB under output/deployment using the file writer tool with directory='deployment'. Include Dockerfiles and a Docker Compose configuration that runs the application services with MongoDB; do not substitute Kubernetes or a non-Docker deployment.",
+    expected_output="A runnable Docker deployment containing frontend and backend Dockerfiles, a Docker Compose file for the frontend, backend, and MongoDB services, environment-based configuration, MongoDB persistent storage, service health checks, and concise build/run instructions. Include a CI pipeline only if it supports the Docker workflow.",
     agent=devops_engineer,
     context=[architecture_task, backend_task, frontend_task, qa_task],
     output_file="output/documentation/06_deployment.md",

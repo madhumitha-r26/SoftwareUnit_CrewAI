@@ -1,43 +1,47 @@
-# Project Plan: User Authentication Module (Login & Registration)
+# Project Plan: Secure Authentication Module (Login & Registration)
 
 **Project Manager:** Rose  
-**Objective:** Deliver a secure, scalable, and compliant authentication system (Login, Registration, and Password Recovery) on time, within scope, and on budget.
+**Project Goal:** Deliver a production-ready, secure, and responsive login and registration system on time and within scope.
 
 ---
 
 ## 1. Milestone Timeline
-The project is estimated to take **4 weeks** from kickoff to deployment. This timeline accounts for the architectural complexity of JWT implementation and security auditing.
+This project is estimated to take **4 weeks** from kickoff to deployment. We are utilizing an Agile-lite approach with weekly milestones.
 
-| Milestone | Key Deliverables | Duration | Timeline |
-| :--- | :--- | :--- | :--- |
-| **M1: Requirements & Design** | Finalized UI Mockups, API Documentation, DB Schema | Week 1 | Day 1 - Day 5 |
-| **M2: Backend Core Development** | API Endpoints, DB Integration, Password Hashing | Week 2 | Day 6 - Day 10 |
-| **M3: Frontend Integration** | Form Implementation, State Management, API Wiring | Week 3 | Day 11 - Day 15 |
-| **M4: QA, Security & Launch** | Pentesting, Edge Case Testing, Production Deploy | Week 4 | Day 16 - Day 20 |
+| Milestone | Phase | Deliverables | Duration | Timeline |
+| :--- | :--- | :--- | :--- | :--- |
+| **M1: Foundation** | Design & Setup | UI Mockups, DB Schema, Tech Stack Init, API Contract | Week 1 | Day 1 - 5 |
+| **M2: Core Logic** | Backend Dev | Registration API, Login API, Password Hashing, JWT Logic | Week 2 | Day 6 - 10 |
+| **M3: Interface** | Frontend Dev | Login/Reg Forms, Validation, State Mgmt (React Query) | Week 3 | Day 11 - 15 |
+| **M4: Hardening** | QA & Deploy | Security Audit, Bug Fixing, Dockerization, Production Launch | Week 4 | Day 16 - 20 |
 
 ---
 
 ## 2. Resource Allocation Breakdown
-To ensure zero bottlenecks, resources are allocated by specialty. Each member is responsible for their specific domain but collaborates during the integration phase.
+To keep the budget lean and the team focused, resources are allocated by specialty. 
 
-| Role | Primary Responsibilities | Allocation |
-| :--- | :--- | :--- |
-| **UI/UX Designer** | High-fidelity wireframes, Responsive layouts, User flow maps. | 40% (Week 1) |
-| **Backend Developer** | Node.js/TypeScript API, Argon2 hashing, JWT logic, PostgreSQL. | 100% (Week 2-3) |
-| **Frontend Developer** | React/Tailwind forms, Client-side validation, Token storage. | 100% (Week 3) |
-| **QA Engineer** | Functional testing, Load testing, Security/Penetration testing. | 100% (Week 4) |
-| **DevOps Engineer** | CI/CD Pipeline, HTTPS/TLS config, Environment setup. | 30% (Week 1, 4) |
-| **Project Manager (Rose)** | Timeline tracking, Blocker removal, Stakeholder alignment. | 20% (Throughout) |
+| Role | Primary Responsibility | Allocation | Key Focus Area |
+| :--- | :--- | :--- | :--- |
+| **Business Analyst** | Requirement Definition | 20% (W1-W4) | Acceptance criteria & User stories. |
+| **Solution Architect**| Technical Oversight | 15% (W1-W4) | JWT Strategy, DB indexing, Security audits. |
+| **UI/UX Designer** | Visuals & Wireframes | 50% (W1-W2) | Responsive layouts, Accessibility (WCAG). |
+| **Backend Developer** | Server-side Logic | 100% (W1-W3) | API endpoints, Bcrypt, MongoDB, JWT. |
+| **Frontend Developer**| Client-side Logic | 100% (W2-W4) | Form validation, State mgmt, API integration. |
+| **QA Engineer** | Testing & Validation | 60% (W3-W4) | Integration tests, Edge cases, Security testing. |
+| **DevOps Engineer** | Infrastructure | 30% (W1, W4) | Docker Compose, CI/CD, HTTPS Setup. |
 
 ---
 
 ## 3. Critical Path Analysis
-The critical path identifies the sequence of dependent tasks that determine the shortest possible project duration. Any delay in these tasks will delay the final delivery.
+The critical path is the sequence of stages that determines the minimum project duration. Any delay here delays the final delivery.
 
-**Path:** `DB Schema Definition` $\rightarrow$ `Backend API Development` $\rightarrow$ `Frontend API Integration` $\rightarrow$ `Security Audit/QA` $\rightarrow$ `Production Deployment`.
+**Path: Requirements $\rightarrow$ Backend API $\rightarrow$ Frontend Integration $\rightarrow$ QA $\rightarrow$ Deployment**
 
-*   **The Bottleneck:** The Backend API is the central dependency. The Frontend cannot be fully integrated without the `/auth` endpoints, and QA cannot begin without a functional end-to-end flow.
-*   **Mitigation:** I will implement **API Mocking** (using tools like Prism or MSW). This allows the Frontend developer to build the UI against a mock server while the Backend developer is still coding the actual logic, decoupling the two timelines.
+1.  **Backend API (High Dependency):** The Frontend cannot implement the actual login/registration flow until the API contracts (`/register`, `/login`, `/refresh`) are finalized and functional.
+2.  **JWT Implementation:** The "Refresh Token" logic is the most complex technical piece. If this fails, session persistence (a core requirement) fails.
+3.  **QA Security Sweep:** Because this handles user credentials, the "Hardening" phase is non-negotiable. We cannot skip security testing to meet a deadline.
+
+**Bottleneck Mitigation:** To prevent the Frontend dev from idling in Week 2, they will build the UI using **Mock APIs (JSON Server)** while the Backend dev builds the actual logic.
 
 ---
 
@@ -45,16 +49,9 @@ The critical path identifies the sequence of dependent tasks that determine the 
 
 | Category | Risk | Impact | Probability | Mitigation Strategy |
 | :--- | :--- | :--- | :--- | :--- |
-| **Security** | Account Enumeration via error messages | High | Medium | **Enforcement:** Use generic "Invalid email or password" messages for all auth failures. |
-| **Security** | Token Theft via XSS/CSRF | Critical | Medium | **Technical Control:** Store Refresh Tokens in `HttpOnly, Secure, SameSite=Strict` cookies; keep Access Tokens in memory. |
-| **Technical** | Email Delivery Failures (Spam filters) | Medium | High | **Vendor Strategy:** Use a professional transactional email service (e.g., SendGrid or AWS SES) instead of a basic SMTP server. |
-| **Timeline** | "Scope Creep" (Adding Social Login mid-sprint) | Medium | High | **Change Control:** OAuth (Google/Microsoft) is in the requirements but sequenced *after* core email/pass logic. Any additional providers go to V2. |
-| **Compliance** | GDPR/Data Privacy non-compliance | High | Low | **Audit:** Mandatory "Terms of Service" checkbox and implemented "Right to Erasure" logic in the DB schema. |
-
----
-
-## 5. Project Success Criteria
-*   **Timeline:** Deployment completed by Day 20.
-*   **Scope:** 100% of User Stories (US.1 - US.5) pass Acceptance Criteria.
-*   **Security:** Zero "Critical" or "High" vulnerabilities found during the Week 4 Security Audit.
-*   **Performance:** API response times for login/registration consistently $< 2$ seconds.
+| **Security** | Brute-force attacks on login endpoint | High | Medium | Implement `express-rate-limit` and account lockout policies after 5 failed attempts. |
+| **Security** | XSS attacks stealing session tokens | Critical | Low | Use `httpOnly`, `Secure`, and `SameSite=Strict` cookies for Refresh Tokens; avoid `localStorage`. |
+| **Technical** | API/Frontend mismatch (Contract break) | Medium | Medium | Use **TypeScript** interfaces across both stacks to ensure type safety and contract alignment. |
+| **Scope** | "Scope Creep" (e.g., adding Social Login/OAuth) | Medium | High | Strictly adhere to the BRD. Any additions (Google/Facebook login) go into a "Phase 2" backlog. |
+| **UX** | Poor mobile experience/responsiveness | Low | Medium | UI/UX Designer must provide mobile-first Figma mocks; QA to test on 3+ screen sizes. |
+| **Operational** | Database connection leaks or slow queries | Medium | Low | Use MongoDB Atlas for managed scaling and implement proper index on the `email` field. |

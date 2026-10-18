@@ -1,118 +1,120 @@
-# Business Requirements Document (BRD): User Authentication Module
+# Business Requirements Document (BRD): Secure Authentication Module
 
-**Project:** User Authentication Module (Login & Registration)  
 **Document Version:** 1.0  
-**Status:** Finalized for Development  
-**Author:** Business Analyst  
+**Status:** Final  
+**Owner:** Business Analyst  
+**Project Reference:** Secure Authentication Module (Login & Registration)
 
 ---
 
 ## 1. Executive Summary
-The goal of this module is to provide a secure, compliant, and user-friendly gateway for users to create accounts and access the platform. To prevent the common "engineering gap," this document explicitly defines not only the "happy path" but also the security constraints (to prevent account enumeration) and compliance requirements (GDPR) mentioned in the project plan.
+The goal of this module is to provide a secure, scalable, and user-friendly gateway for users to create accounts and authenticate their identity. To prevent "building the wrong thing," this document explicitly defines the boundaries of the MVP: **Email/Password authentication only.** Social logins and multi-factor authentication (MFA) are officially moved to Phase 2 to ensure the critical path (M1-M4) is met.
 
 ---
 
 ## 2. End-to-End User Workflows
 
-### 2.1 Registration Workflow
-`Guest User` $\rightarrow$ `Registration Page` $\rightarrow$ `Input Details` $\rightarrow$ `Client-side Validation` $\rightarrow$ `Terms Agreement` $\rightarrow$ `Backend Processing` $\rightarrow$ `Account Created` $\rightarrow$ `Redirect to Login/Dashboard`.
+### Workflow A: New User Onboarding (Registration)
+1. **Entry:** User lands on the Registration Page.
+2. **Input:** User enters Email, Password, and Password Confirmation.
+3. **Validation:** System checks for email availability and password strength in real-time.
+4. **Submission:** User submits the form.
+5. **Backend Process:** System hashes the password (Bcrypt), saves the user to MongoDB, and generates an initial session.
+6. **Outcome:** User is redirected to the Dashboard/Home page with a "Registration Successful" notification.
 
-### 2.2 Login Workflow
-`Registered User` $\rightarrow$ `Login Page` $\rightarrow$ `Input Credentials` $\rightarrow$ `Backend Authentication` $\rightarrow$ `JWT Generation` $\rightarrow$ `Secure Token Storage` $\rightarrow$ `Redirect to Dashboard`.
+### Workflow B: Returning User Access (Login)
+1. **Entry:** User lands on the Login Page.
+2. **Input:** User enters Email and Password.
+3. **Submission:** User submits the form.
+4. **Backend Process:** System verifies credentials, checks for account lockout status, and issues a JWT (Access Token) and an `httpOnly` Refresh Token.
+5. **Outcome:** User is redirected to the protected area of the application.
 
 ---
 
-## 3. Functional Requirements & User Stories
+## 3. Detailed Functional Requirements & User Stories
 
 ### 3.1 Registration Module
 **Priority: High**
 
-#### US.1: New User Account Creation
-*As a guest user, I want to create an account using my email and a password so that I can access the platform's features.*
+| User Story ID | User Story | Priority |
+| :--- | :--- | :--- |
+| **US.1** | As a new user, I want to create an account using my email and a password so that I can access the platform's features. | P0 |
+| **US.2** | As a user, I want to see real-time validation errors (e.g., "Invalid email format") so that I can correct my input before submitting. | P1 |
 
-**Acceptance Criteria:**
-*   **Scenario: Successful Registration**
-    *   **Given** I am on the registration page
-    *   **When** I enter a valid, unique email, a strong password, and confirm the password
-    *   **And** I check the "Terms of Service" checkbox
-    *   **And** I click "Sign Up"
-    *   **Then** the system should create my account in the PostgreSQL database
-    *   **And** I should be redirected to the login page with a success message "Account created successfully."
+#### Acceptance Criteria for US.1 (Registration Logic)
+**Scenario 1: Successful Registration**
+*   **Given** I am on the registration page
+*   **When** I enter a unique, valid email and a password that meets security criteria
+*   **And** I enter the same password in the confirmation field
+*   **And** I click "Sign Up"
+*   **Then** the system should create my account in the database
+*   **And** I should be redirected to the dashboard with a success message.
 
-*   **Scenario: Duplicate Email Prevention**
-    *   **Given** an account already exists with the email `user@example.com`
-    *   **When** I attempt to register with `user@example.com`
-    *   **Then** the system should return an error message "Email is already in use"
-    *   **And** no duplicate record should be created.
+**Scenario 2: Duplicate Email Registration**
+*   **Given** an account already exists with the email `user@example.com`
+*   **When** I attempt to register with `user@example.com`
+*   **Then** the system should prevent account creation
+*   **And** display an error message: "An account with this email already exists."
 
-*   **Scenario: Compliance Validation (GDPR)**
-    *   **Given** I have filled out all registration fields
-    *   **When** I leave the "Terms of Service" checkbox unchecked
-    *   **And** I click "Sign Up"
-    *   **Then** the system should prevent submission and highlight the checkbox in red with the message "You must agree to the Terms of Service to continue."
+**Scenario 3: Password Mismatch**
+*   **Given** I am filling out the registration form
+*   **When** the "Password" field and "Confirm Password" field do not match
+*   **Then** the "Sign Up" button should remain disabled (or return an error)
+*   **And** a message "Passwords do not match" should be visible.
 
 ---
 
 ### 3.2 Login Module
-**Priority: Critical**
+**Priority: High**
 
-#### US.2: User Authentication
-*As a registered user, I want to log into my account using my credentials so that I can access my private data.*
+| User Story ID | User Story | Priority |
+| :--- | :--- | :--- |
+| **US.3** | As a registered user, I want to log in with my credentials so that I can access my private data. | P0 |
+| **US.4** | As a user, I want my session to persist even if I refresh the page, so I don't have to log in repeatedly. | P0 |
 
-**Acceptance Criteria:**
-*   **Scenario: Successful Login**
-    *   **Given** I have a verified account
-    *   **When** I enter my correct email and password
-    *   **And** I click "Login"
-    *   **Then** the system should authenticate my credentials using Argon2 hashing
-    *   **And** return an Access Token (in-memory) and a Refresh Token (`HttpOnly, Secure, SameSite=Strict` cookie)
-    *   **And** I should be redirected to the Dashboard.
+#### Acceptance Criteria for US.3 (Login Logic)
+**Scenario 1: Successful Login**
+*   **Given** I have a registered account
+*   **When** I enter my correct email and password
+*   **And** I click "Login"
+*   **Then** the system should authenticate my credentials
+*   **And** store the JWT in memory and the Refresh Token in a `Secure`, `httpOnly` cookie.
 
-*   **Scenario: Failed Login (Security Hardening)**
-    *   **Given** I enter an incorrect password OR an email that does not exist
-    *   **When** I click "Login"
-    *   **Then** the system should display a generic error message: "Invalid email or password"
-    *   **And** the system must NOT specify whether the email exists to prevent account enumeration.
+**Scenario 2: Invalid Credentials**
+*   **Given** I enter an incorrect password or an unregistered email
+*   **When** I click "Login"
+*   **Then** the system should deny access
+*   **And** display a generic error: "Invalid email or password" (to prevent account enumeration).
+
+#### Acceptance Criteria for US.4 (Session Persistence)
+**Scenario 1: Token Refresh on Page Load**
+*   **Given** I have a valid Refresh Token stored in my browser cookies
+*   **When** I refresh the browser or return to the site after closing the tab
+*   **Then** the frontend should call the `/refresh` endpoint
+*   **And** the system should issue a new Access Token without requiring me to log in again.
 
 ---
 
-## 4. Technical & Security Requirements (The "Non-Negotiables")
+## 4. Edge Cases & Technical Constraints
 
-### 4.1 Input Validation Matrix
-| Field | Requirement | Validation Logic | Error Message |
+### 4.1 Security Edge Cases
+*   **Brute Force Protection:** If a user/IP fails login 5 consecutive times, the account must be locked for 15 minutes.
+*   **SQL/NoSQL Injection:** All inputs must be sanitized; the Backend must use parameterized queries or ODM (Mongoose) validation.
+*   **Password Strength:** Passwords must be a minimum of 8 characters, including at least one number and one special character.
+*   **Token Theft:** Access tokens must have a short lifespan (e.g., 15 minutes). Refresh tokens must be revoked upon logout.
+
+### 4.2 UX Edge Cases
+*   **Network Latency:** The "Submit" button must enter a `loading` state (disabled) once clicked to prevent duplicate API calls.
+*   **Empty Fields:** Form submission must be blocked if any required field is empty, with a "Field Required" tooltip.
+*   **Case Sensitivity:** Email addresses must be treated as case-insensitive (e.g., `User@Example.com` is the same as `user@example.com`).
+
+---
+
+## 5. Summary Table for Development Team
+
+| Feature | Frontend Requirement | Backend Requirement | Security Requirement |
 | :--- | :--- | :--- | :--- |
-| **Email** | Required | Must follow RFC 5322 standard regex | "Please enter a valid email address." |
-| **Password** | Required | Min 8 chars, 1 uppercase, 1 number, 1 special char | "Password does not meet security requirements." |
-| **Confirm Pass** | Required | Must match the Password field exactly | "Passwords do not match." |
-| **TOS Checkbox** | Required | Must be `true` | "Agreement to Terms is required." |
-
-### 4.2 Security Constraints
-*   **Password Storage:** Plain-text passwords must **never** touch the database. Use Argon2 for hashing.
-*   **Token Strategy:**
-    *   **Access Token:** Short-lived (e.g., 15 mins), stored in application memory.
-    *   **Refresh Token:** Long-lived, stored in an `HttpOnly` cookie to mitigate XSS.
-*   **API Performance:** All `/auth` endpoints must respond within $< 2$ seconds.
-
----
-
-## 5. Edge Cases & Error Handling
-
-| Edge Case | Expected Behavior | Requirement Reference |
-| :--- | :--- | :--- |
-| **SQL Injection attempt** | Input sanitized by ORM; request rejected. | Security Audit |
-| **Brute Force Attack** | Account lockout or CAPTCHA after 5 failed attempts. | Security Audit |
-| **Session Expiration** | When Access Token expires, use Refresh Token to get a new one; if Refresh Token is expired, redirect to `/login`. | Token Storage Logic |
-| **Network Timeout** | Display a friendly "Server is taking too long to respond. Please try again" message. | Performance Criteria |
-| **Malformed JSON Request** | API returns `400 Bad Request` with a structured error object. | API Documentation |
-
----
-
-## 6. Traceability Matrix (Alignment with Project Plan)
-
-| BRD Requirement | Project Plan Risk/Goal | Validation Method |
-| :--- | :--- | :--- |
-| Generic Error Messages | Risk: Account Enumeration | QA Functional Test |
-| HttpOnly Cookies | Risk: Token Theft (XSS) | Penetration Test (Week 4) |
-| TOS Checkbox | Risk: GDPR Compliance | UI/UX Audit |
-| Argon2 Hashing | Resource: Backend Dev Responsibility | DB Schema Review |
-| API Mocking | Critical Path: Frontend Integration | M3 Integration Testing |
+| **Registration** | Email, Pwd, Confirm Pwd fields; Validation | `/register` endpoint; Bcrypt hashing | MongoDB Index on `email` (Unique) |
+| **Login** | Email, Pwd fields; Loading state | `/login` endpoint; JWT issuance | Rate-limiting on `/login` |
+| **Session** | Interceptor for 401 errors | `/refresh` endpoint; Cookie handling | `httpOnly`, `Secure` cookies |
+| **Validation** | Regex for Email; Pwd matching | Schema validation (Joi/Zod) | Input sanitization |

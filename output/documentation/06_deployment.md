@@ -1,31 +1,40 @@
-I have completed the deployment configuration for the User Authentication Module. As a DevOps Engineer, I've designed this to ensure zero-downtime releases, high availability, and strict adherence to the security requirements (Argon2, dual-token strategy).
+The Docker-based deployment for the Secure Authentication Module has been successfully created under the `deployment` directory. This setup provides a professional, reproducible environment with optimized containers, a reverse proxy for the frontend, and persistent storage for the database.
 
-The following files have been created in the `deployment/` directory:
+### Deployment Summary
 
-### 1. Containerization (Dockerfiles)
-*   **`backend.Dockerfile`**: A multi-stage build for the Node.js/TypeScript API. It separates the build environment from the production runtime to minimize image size and reduce the attack surface by omitting development dependencies.
-*   **`frontend.Dockerfile`**: A multi-stage build that compiles the React application and serves the static assets via a hardened Nginx Alpine image.
+#### 1. Frontend (`deployment/frontend`)
+- **Multi-stage Build**: Uses a Node.js build stage to compile the React app and a lightweight Nginx Alpine stage to serve the static assets.
+- **Nginx Configuration**: includes a custom `nginx.conf` that handles Single Page Application (SPA) routing (redirecting all 404s to `index.html`) and acts as a reverse proxy, forwarding `/api/` requests to the backend container.
 
-### 2. Infrastructure as Code (Kubernetes Manifests)
-*   **`infra-k8s.yaml`**: Deploys the stateful dependencies. It includes a PostgreSQL 15 instance for ACID-compliant identity storage and a Redis instance for high-performance rate limiting (brute-force protection).
-*   **`backend-k8s.yaml`**: Defines a scalable deployment (3 replicas) for the Auth service. It includes:
-    *   **Liveness/Readiness Probes**: To ensure traffic only hits healthy pods.
-    *   **Resource Limits**: Prevents a single pod from consuming all node resources during CPU-intensive Argon2 hashing.
-    *   **ConfigMap**: Decouples environment configuration from the image.
-*   **`frontend-k8s.yaml`**: Deploys the frontend as a LoadBalancer service, ensuring global accessibility to the UI.
+#### 2. Backend (`deployment/backend`)
+- **Security-Hardened**: Uses a Node.js Alpine image and switches to a non-root `node` user to minimize the attack surface.
+- **Optimized**: Uses `npm ci --only=production` to ensure only necessary dependencies are installed in the production image.
 
-### 3. CI/CD Pipeline (GitHub Actions)
-*   **`pipeline.yaml`**: A complete automated lifecycle including:
-    *   **Test Stage**: Installs dependencies and runs both backend and frontend test suites.
-    *   **Build Stage**: Triggered only on merges to `main`. Builds Docker images and pushes them to a container registry.
-    *   **Deploy Stage**: Applies Kubernetes manifests and performs a `rollout restart` to ensure the latest images are pulled and deployed without dropping active connections.
+#### 3. Orchestration (`deployment/docker-compose.yml`)
+- **Service Discovery**: Services communicate via the internal Docker bridge network (e.g., backend connects to `mongodb:27017`).
+- **Health Checks**: 
+    - **MongoDB**: Ensures the database is ready to accept connections before the backend starts.
+    - **Backend**: Monitors the `/api/auth/refresh` endpoint to ensure the API is healthy.
+- **Persistence**: A named volume `mongo-data` is used to ensure user records persist across container restarts and updates.
+- **Environment Management**: Supports variable substitution for `JWT_SECRET` and `REFRESH_SECRET` via a `.env` file.
 
-### Summary of Deployment Files:
-| File | Purpose | Key Feature |
-| :--- | :--- | :--- |
-| `backend.Dockerfile` | Backend Image | Multi-stage build (Node 20) |
-| `frontend.Dockerfile` | Frontend Image | Nginx Alpine Production Server |
-| `backend-k8s.yaml` | K8s Backend | Health Probes & HPA Ready |
-| `frontend-k8s.yaml` | K8s Frontend | LoadBalancer for Public Access |
-| `infra-k8s.yaml` | K8s State | Postgres & Redis Integration |
-| `pipeline.yaml` | CI/CD | Automated Test $\rightarrow$ Build $\rightarrow$ K8s Deploy |
+### Final File Structure
+```text
+deployment/
+├── docker-compose.yml
+├── README.md
+├── frontend/
+│   ├── Dockerfile
+│   └── nginx.conf
+└── backend/
+    └── Dockerfile
+```
+
+### How to Run
+1. Ensure you have the source code in `./frontend` and `./backend` relative to the deployment folder.
+2. Execute:
+   ```bash
+   cd deployment
+   docker-compose up --build -d
+   ```
+3. Access the app at `http://localhost`.
