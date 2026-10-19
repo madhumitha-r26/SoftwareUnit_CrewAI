@@ -1,4 +1,4 @@
-# SoftwareUnit - Autonomous AIWorkflow Automation
+# SoftwareUnit - Autonomous AI Workflow Automation
 
 SoftwareUnit is an automated software delivery workflow using CrewAI and local LLMs (Ollama/Gemma) to orchestrate a virtual team of 8 specialized agents, autonomously generating complete project documentation, architecture designs, source code, and CI/CD deployment assets from a single prompt.
 
