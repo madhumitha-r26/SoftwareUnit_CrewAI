@@ -1,36 +1,57 @@
-# Deployment Instructions for Secure Authentication Module
-
-## Prerequisites
-- Docker installed
-- Docker Compose installed
-
-## Quick Start
-1. Navigate to the deployment directory:
-   ```bash
-   cd deployment
-   ```
-
-2. Build and start the entire stack:
-   ```bash
-   docker-compose up --build -d
-   ```
-
-3. Access the application:
-   - Frontend: `http://localhost`
-   - Backend API: `http://localhost:5000/api/auth`
-
-## Service Details
-- **Frontend**: React app served by Nginx. API requests are proxied to the backend via `/api/` path.
-- **Backend**: Node.js/Express API. Connects to MongoDB via the internal Docker network.
-- **Database**: MongoDB with persistent volume `mongo-data`.
-
-## Environment Variables
-You can create a `.env` file in the `deployment` folder to override defaults:
-- `JWT_SECRET`: Secret used to sign Access Tokens.
-- `REFRESH_SECRET`: Secret used to sign Refresh Tokens.
-
-## Maintenance Commands
-- **View logs**: `docker-compose logs -f`
-- **Stop services**: `docker-compose down`
-- **Wipe database**: `docker-compose down -v`
-- **Restart backend**: `docker-compose restart backend`
+# ==============================================================================
+# Enterprise Task Management System (TMS) - Deployment Instructions
+# ==============================================================================
+# 
+# This directory contains the production-ready Docker configuration for the 
+# TMS stack (React, Node.js, MongoDB).
+#
+# ------------------------------------------------------------------------------
+# 1. PREREQUISITES
+# ------------------------------------------------------------------------------
+# - Docker installed (v20.10+)
+# - Docker Compose installed (v2.0+)
+#
+# ------------------------------------------------------------------------------
+# 2. QUICK START
+# ------------------------------------------------------------------------------
+# To launch the entire system in detached mode:
+#
+#   docker-compose up -d --build
+#
+# This command will:
+#   a) Build the frontend image (with Nginx stage)
+#   b) Build the backend image
+#   c) Pull and start MongoDB 6.0
+#   d) Establish a persistent volume for MongoDB data
+#   e) Wire the network so frontend -> backend -> mongo
+#
+# ------------------------------------------------------------------------------
+# 3. SERVICE ACCESS
+# ------------------------------------------------------------------------------
+# - Frontend UI: http://localhost
+# - Backend API: http://localhost:5000/api
+# - MongoDB: localhost:27017
+#
+# ------------------------------------------------------------------------------
+# 4. OPERATIONAL COMMANDS
+# ------------------------------------------------------------------------------
+# Check logs for the backend:
+#   docker compose logs -f backend
+#
+# View health status of containers:
+#   docker compose ps
+#
+# Stop and remove all containers and networks:
+#   docker compose down
+#
+# Wipe data (including MongoDB volumes):
+#   docker compose down -v
+#
+# ------------------------------------------------------------------------------
+# 5. CONFIGURATION NOTES
+# ------------------------------------------------------------------------------
+# - Environment variables are managed in docker-compose.yml for simplicity.
+# - MongoDB data is persisted in the 'mongo-data' volume, surviving restarts.
+# - The Frontend uses Nginx as a reverse proxy to forward /api requests to 
+#   the backend, eliminating CORS issues in production.
+# ==============================================================================

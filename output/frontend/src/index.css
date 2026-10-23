@@ -3,5 +3,13 @@
 @tailwind utilities;
 
 body {
-  @apply bg-surface-100 font-sans text-neutral-900;
+  @apply bg-surface text-slate-800 font-sans;
+}
+
+.kanban-column {
+  @apply flex-1 min-w-[300px] bg-slate-100 rounded-lg p-4 flex flex-col gap-4 h-full;
+}
+
+.task-card {
+  @apply bg-white p-4 rounded-md shadow-sm border border-border cursor-pointer hover:shadow-md transition-shadow duration-200;
 }

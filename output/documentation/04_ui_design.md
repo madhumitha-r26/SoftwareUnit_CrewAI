@@ -1,165 +1,140 @@
-# UI/UX Design Specification: Secure Authentication Module
+# UI/UX Design Specification: Enterprise Task Management System (TMS)
 
-**Project:** Secure Authentication Module (Login & Registration)  
-**Designer:** UI/UX Lead  
-**Objective:** Maximize user satisfaction and task completion rates by providing an intuitive, frictionless, and visually polished authentication experience that adheres to strict security and accessibility standards.
+**Designer Notes:** *This specification prioritizes "Cognitive Load Reduction." In an enterprise environment with 10,000+ tasks, the danger is visual noise. My approach utilizes a "Progressive Disclosure" strategy—showing only the information needed for the current task and hiding complex dependency logic until explicitly requested.*
 
 ---
 
 ## 1. User Journey Maps
 
-### Journey A: New User Onboarding (Registration)
-**Goal:** Create a secure account with minimal friction.
+### Journey A: The PM’s Dependency Setup (The "Architect" Path)
+**Goal:** Map a complex sequence of tasks to ensure no one starts work prematurely.
+*   **Entry:** PM opens the Project Dashboard.
+*   **Action 1 (Creation):** Clicks "New Task" $\rightarrow$ Inputs details $\rightarrow$ Saves.
+*   **Action 2 (Linking):** Opens Task B $\rightarrow$ Navigates to "Dependencies" tab $\rightarrow$ Searches for Task A $\rightarrow$ Selects "Blocked By."
+*   **System Feedback:** Task B immediately receives a "Blocked" badge (Amber) on the Kanban board.
+*   **Emotional State:** Focus $\rightarrow$ Caution (Ensuring logic is correct) $\rightarrow$ Satisfaction (Visual confirmation of the link).
 
-| Stage | Action | User Emotion | System Response | UX Touchpoint |
-| :--- | :--- | :--- | :--- | :--- |
-| **Entry** | Navigates to "Sign Up" page | Neutral / Hopeful | Renders clean, focused registration form | Registration Page |
-| **Input** | Enters Email, Password, Confirm Password | Focused | Real-time validation checks (regex, matching) | Input Fields $\rightarrow$ Validation Labels |
-| **Correction** | Fixes a password strength error | Slightly Frustrated | Immediate visual feedback (Green checkmark) | Password Strength Meter |
-| **Submission** | Clicks "Sign Up" button | Anticipation | Button enters `loading` state $\rightarrow$ API call | Submit Button (Loading Spinner) |
-| **Success** | Redirected to Dashboard | Satisfied | Displays "Registration Successful" toast | Toast Notification $\rightarrow$ Dashboard |
-
-### Journey B: Returning User Access (Login)
-**Goal:** Quick and secure access to the protected area.
-
-| Stage | Action | User Emotion | System Response | UX Touchpoint |
-| :--- | :--- | :--- | :--- | :--- |
-| **Entry** | Navigates to "Login" page | Purposeful | Renders minimal login form | Login Page |
-| **Input** | Enters credentials | Routine | Focus states highlight active field | Input Fields |
-| **Submission** | Clicks "Login" | Expectation | Validates JWT/Refresh Token logic | Submit Button |
-| **Error** | Enters wrong password | Annoyed | Displays generic "Invalid email or password" | Alert Banner |
-| **Success** | Redirected to Dashboard | Relieved | Transparently handles token storage | Protected Route $\rightarrow$ Dashboard |
+### Journey B: The Developer’s Daily Sprint (The "Execution" Path)
+**Goal:** Move tasks to 'Done' as efficiently as possible.
+*   **Entry:** Developer logs in $\rightarrow$ Lands on Kanban Board.
+*   **Action 1 (Filtering):** Filters board by "Assigned to Me."
+*   **Action 2 (Attempted Move):** Tries to drag a "Blocked" task to 'In Progress'.
+*   **System Feedback:** Task snaps back; a toast notification appears: *"Cannot move: This task is blocked by [Task A]."*
+*   **Action 3 (Completion):** Drags an unblocked task to 'Review'.
+*   **Emotional State:** Determination $\rightarrow$ Frustration (Blocker) $\rightarrow$ Relief (Clear path to completion).
 
 ---
 
 ## 2. Low-Fidelity Wireframe Layouts
 
-### 2.1 Registration Page
-**Layout Strategy:** Center-aligned card layout to minimize cognitive load and eliminate peripheral distractions.
-
-```markdown
-_______________________________________________________________________
-|                                                                     |
-|                          [ App Logo ]                               |
-|                                                                     |
-|                ______________________________________               |
-|               |           Create Account             |              |
-|               |______________________________________|              |
-|               |                                       |              |
-|               |  Email Address                       |              |
-|               |  [_________________________________]  |              |
-|               |  (i) Invalid email format            | <--- Error State|
-|               |                                       |              |
-|               |  Password                            |              |
-|               |  [_________________________________]  |              |
-|               |  [====------] (8+ chars, 1 num, 1 spec)| <--- Strength|
-|               |                                       |              |
-|               |  Confirm Password                    |              |
-|               |  [_________________________________]  |              |
-|               |  (X) Passwords do not match          | <--- Error State|
-|               |                                       |              |
-|               |  [        SIGN UP (Disabled)        ]  |              |
-|               |______________________________________|              |
-|                                                                     |
-|                Already have an account? Login here                   |
-|_____________________________________________________________________|
+### 2.1 Global Navigation Shell (Common to all views)
+```text
+_______________________________________________________________________________
+| [TMS LOGO]  | Search Tasks... (Ctrl+K)          | [Notifications] [User Profile] |
+|_____________|__________________________________|_______________________________|
+|             |                                                                   |
+|  Dashboard  |  < Breadcrumb: Projects / Project Alpha / Kanban Board >          |
+|  Projects   |__________________________________________________________________|
+|  Users      |                                                                   |
+|  Reports    |                   (Main Content Area)                              |
+|  Settings   |                                                                   |
+|_____________|__________________________________________________________________|
 ```
 
-### 2.2 Login Page
-**Layout Strategy:** Extreme minimalism to speed up the "Time to Task Completion."
+### 2.2 Kanban Board (The Engine)
+```text
+[ + New Task ] [ Filter: Me v ] [ Sort: Priority v ] [ View: Kanban ]
 
-```markdown
-_______________________________________________________________________
-|                                                                     |
-|                          [ App Logo ]                               |
-|                                                                     |
-|                ______________________________________               |
-|               |               Welcome Back            |              |
-|               |______________________________________|              |
-|               |                                       |              |
-|               |  Email Address                       |              |
-|               |  [_________________________________]  |              |
-|               |                                       |              |
-|               |  Password                            |              |
-|               |  [_________________________________]  |              |
-|               |                                       |              |
-|               |  [             LOGIN                ]  | <--- Loading|
-|               |______________________________________|              |
-|                                                                     |
-|                Don't have an account? Register here                 |
-|_____________________________________________________________________|
+| TO-DO                | IN PROGRESS          | REVIEW              | DONE               |
+|----------------------|---------------------|---------------------|-------------------|
+| [ Task 101 ]        | [ Task 104 ]        | [ Task 106 ]        | [ Task 100 ]       |
+| Priority: High      | Priority: Med       | Priority: High      | Priority: Low      |
+| User: JD            | User: AS            | User: JD            | User: AS           |
+| [!] Blocked         |                     |                     |                   |
+|----------------------|---------------------|---------------------|-------------------|
+| [ Task 102 ]        | [ Task 105 ]        |                     |                   |
+| Priority: Low       | Priority: High      |                     |                   |
+| User: AS            | User: JD            |                     |                   |
+|----------------------|---------------------|---------------------|-------------------|
+```
+
+### 2.3 Task Detail Modal (The Control Center)
+```text
+_______________________________________________________
+| Task TMS-101: API Implementation            [ X Close ] |
+|_______________________________________________________|
+| Status: [ To-Do v ]  Priority: [ High v ]  Assignee: [ JD v ] |
+|                                                       |
+| Description:                                          |
+| [ Enter detailed technical requirements here...      ] |
+|                                                       |
+| ----------------------------------------------------- |
+| Dependencies:                                         |
+| [ + Add Dependency ]                                  |
+| (i) Blocked By: TMS-99: API Design [ Remove ]          |
+| (i) Blocks: TMS-105: Frontend Integration              |
+| ----------------------------------------------------- |
+| [ Cancel ]                                [ Save Changes ] |
+|_______________________________________________________|
 ```
 
 ---
 
 ## 3. Design System Tokens
 
-### 3.1 Color Palette
-*Rooted in trust, security, and clarity.*
-
-| Token | Hex Code | Usage | Psychology |
-| :--- | :--- | :--- | :--- |
-| **Primary-600** | `#2563EB` | Main Buttons, Active States | Trust, Professionalism |
-| **Primary-700** | `#1D4ED8` | Button Hover/Active | Depth and Interaction |
-| **Neutral-900** | `#111827` | Primary Text, Headings | Authority, Readability |
-| **Neutral-500** | `#6B7280` | Placeholder Text, Captions | Subordination |
-| **Error-500** | `#DC2626` | Validation Errors, Alert Banners | Urgency, Warning |
-| **Success-500** | `#16A34A` | Success Toasts, Valid Inputs | Completion, Safety |
-| **Surface-100**| `#F9FAFB` | Page Background | Cleanliness, Focus |
+### 3.1 Color Palette (Psychology-Driven)
+*   **Primary (Action):** `#2563EB` (Royal Blue) — Evokes trust, stability, and professional focus.
+*   **Success (Done):** `#059669` (Emerald Green) — Clear completion signal.
+*   **Warning (Blocked):** `#D97706` (Amber) — Alerts user to a pause without signaling "Error."
+*   **Danger (Critical/Error):** `#DC2626` (Crimson) — Used for circular dependency alerts.
+*   **Neutral (Backgrounds):**
+    *   Surface: `#F8FAFC` (Cool Gray)
+    *   Border: `#E2E8F0`
+    *   Text Primary: `#1E293B` (Deep Slate)
 
 ### 3.2 Typography
-*System fonts for maximum cross-platform rendering speed.*
+*   **Primary Font:** *Inter* (Sans-Serif) — Optimized for readability on screens.
+*   **Scale:**
+    *   H1 (Page Titles): `24px / Bold / 1.2 line-height`
+    *   H2 (Section Headers): `18px / Semi-Bold / 1.4 line-height`
+    *   Body (Task Content): `14px / Regular / 1.5 line-height`
+    *   Caption (Metadata): `12px / Medium / 1.2 line-height`
 
-*   **Primary Font:** `Inter, system-ui, -apple-system, sans-serif`
-*   **Heading 1 (Card Title):** 24px | Semi-Bold | Line-Height: 1.2 | Color: Neutral-900
-*   **Label Text:** 14px | Medium | Line-Height: 1.5 | Color: Neutral-900
-*   **Helper/Error Text:** 12px | Regular | Line-Height: 1.4 | Color: Error-500
-*   **Button Text:** 16px | Semi-Bold | Uppercase/Titlecase | Color: White
-
-### 3.3 Spacing & Geometry
-*Consistent mathematical scaling (4px base).*
-
-*   **Border Radius:** `8px` (Modern, softened corners for accessibility/friendliness).
-*   **Input Padding:** `12px 16px`.
-*   **Card Padding:** `32px` (Generous white space to reduce anxiety).
-*   **Element Gap:** `20px` between form fields.
-*   **Shadows:** `0 4px 6px -1px rgb(0 0 0 / 0.1)` for card elevation.
+### 3.3 Spacing & Grid
+*   **Base Unit:** `4px`
+*   **Standard Padding:** `16px` (4 units)
+*   **Card Gap:** `12px` (3 units)
+*   **Border Radius:** `6px` (Softened corners for a modern enterprise feel).
 
 ---
 
 ## 4. Accessibility (WCAG 2.1) Guidelines
 
-To ensure the application is inclusive, the following standards are mandatory:
-
-1.  **Contrast Ratio:** All text must maintain a minimum contrast ratio of **4.5:1** against its background (compliant with AA standards).
-2.  **Keyboard Navigation:** 
-    *   Logical `tabindex` flow: Email $\rightarrow$ Password $\rightarrow$ Confirm $\rightarrow$ Submit.
-    *   Visible focus rings (2px solid Primary-600) around all active elements.
-3.  **Screen Reader Support:**
-    *   Use `<label>` tags explicitly linked to inputs via `for` attributes.
-    *   `aria-live="polite"` for real-time validation messages so screen readers announce errors without interrupting the user.
-    *   `aria-invalid="true"` applied to fields upon validation failure.
-4.  **Error Handling:** Errors must not be indicated by color alone. A warning icon (⚠️) must accompany error text to support color-blind users.
+| Feature | Guideline | Implementation |
+| :--- | :--- | :--- |
+| **Contrast** | Level AA | All text-to-background ratios must be $\geq$ 4.5:1. |
+| **Navigation** | Keyboard-only | All Kanban actions (Move, Open, Edit) must be accessible via `Tab` and `Enter/Space`. |
+| **Visual Cues** | Redundancy | Do not rely on color alone for "Blocked" status; include an icon `(!)` and a text label. |
+| **Screen Readers** | ARIA Labels | Kanban columns must be marked as `role="region"` with `aria-label="Column: To-Do"`. |
+| **Error State** | Clear Feedback | Circular dependency errors must be announced via `aria-live="assertive"`. |
 
 ---
 
-## 5. Interaction Flow Diagram
+## 5. Interaction Flow Diagrams
 
-### 5.1 Registration Flow
-`Start` $\rightarrow$ `Input Email` $\rightarrow$ `(Is Email Unique?)` 
-$\quad \downarrow$ (No) $\rightarrow$ `Show Error: "Email exists"` $\rightarrow$ `Back to Input`
-$\quad \downarrow$ (Yes) $\rightarrow$ `Input Password` $\rightarrow$ `(Meets Strength?)`
-$\quad \quad \downarrow$ (No) $\rightarrow$ `Show Strength Indicator` $\rightarrow$ `Back to Input`
-$\quad \quad \downarrow$ (Yes) $\rightarrow$ `Input Confirm Password` $\rightarrow$ `(Matches?)`
-$\quad \quad \quad \downarrow$ (No) $\rightarrow$ `Disable Submit / Show Error`
-$\quad \quad \quad \downarrow$ (Yes) $\rightarrow$ `Click Sign Up` $\rightarrow$ `Loading State` $\rightarrow$ `Backend Request` $\rightarrow$ `Redirect to Dashboard`
+### 5.1 State Machine Logic (Task Transition)
+`Start` $\rightarrow$ `To-Do` $\rightarrow$ `In Progress` $\rightarrow$ `Review` $\rightarrow$ `Done` $\rightarrow$ `End`
 
-### 5.2 Login & Session Flow
-`Start` $\rightarrow$ `Input Credentials` $\rightarrow$ `Click Login` $\rightarrow$ `Backend Auth`
-$\quad \downarrow$ (Invalid) $\rightarrow$ `Generic Error Message` $\rightarrow$ `Reset Password Field`
-$\quad \downarrow$ (Valid) $\rightarrow$ `Store JWT in Memory` + `Refresh Token in HttpOnly Cookie` $\rightarrow$ `Redirect to Dashboard`
+**Logic Constraints:**
+1.  **Blocked Check:** If `Task.isBlocked == true`, disable transition to `In Progress`.
+2.  **Sequence Check:** If `TargetState == Done` AND `CurrentState != Review`, trigger: *"Please move task to Review first."*
+3.  **Dependency Trigger:** If `Task.status` updates to `Done` $\rightarrow$ Search `DependentTasks` $\rightarrow$ Change `BlockedStatus` to `false` $\rightarrow$ Send Notification to `Assignee`.
 
-**The Persistence Loop (Auto-Refresh):**
-`Page Load/Refresh` $\rightarrow$ `Check for Refresh Token` $\rightarrow$ `Call /refresh endpoint`
-$\quad \downarrow$ (Token Expired/Missing) $\rightarrow$ `Clear State` $\rightarrow$ `Redirect to Login`
-$\quad \downarrow$ (Token Valid) $\rightarrow$ `Issue New Access Token` $\rightarrow$ `Grant Access to Page`
+### 5.2 RBAC Interaction Flow
+1.  **User Action** $\rightarrow$ **API Middleware** $\rightarrow$ **Role Check**
+2.  **If Role == `Viewer`**:
+    *   `UI Action (Drag)` $\rightarrow$ `Intercept` $\rightarrow$ `Prevent Action` $\rightarrow$ `Show Tooltip: "Read-only access"`.
+3.  **If Role == `Editor`**:
+    *   `UI Action (Drag)` $\rightarrow$ `Allow` $\rightarrow$ `Update DB` $\rightarrow$ `Push WebSocket Update to all clients`.
+4.  **If Role == `Admin`**:
+    *   `Access User Management` $\rightarrow$ `Modify Role` $\rightarrow$ `Force Refresh User Session`.

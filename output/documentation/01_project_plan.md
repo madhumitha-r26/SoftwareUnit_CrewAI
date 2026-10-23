@@ -1,57 +1,60 @@
-# Project Plan: Secure Authentication Module (Login & Registration)
+# Project Plan: Enterprise Task Management System (TMS)
 
 **Project Manager:** Rose  
-**Project Goal:** Deliver a production-ready, secure, and responsive login and registration system on time and within scope.
+**Status:** Planning Phase  
+**Objective:** Deliver a scalable, enterprise-grade task management system with RBAC, Kanban visualization, and dependency tracking on time, within scope, and on budget.
 
 ---
 
 ## 1. Milestone Timeline
-This project is estimated to take **4 weeks** from kickoff to deployment. We are utilizing an Agile-lite approach with weekly milestones.
+The project is estimated to span **20 weeks**. We will follow an Agile-Scrum hybrid approach with bi-weekly sprints.
 
-| Milestone | Phase | Deliverables | Duration | Timeline |
-| :--- | :--- | :--- | :--- | :--- |
-| **M1: Foundation** | Design & Setup | UI Mockups, DB Schema, Tech Stack Init, API Contract | Week 1 | Day 1 - 5 |
-| **M2: Core Logic** | Backend Dev | Registration API, Login API, Password Hashing, JWT Logic | Week 2 | Day 6 - 10 |
-| **M3: Interface** | Frontend Dev | Login/Reg Forms, Validation, State Mgmt (React Query) | Week 3 | Day 11 - 15 |
-| **M4: Hardening** | QA & Deploy | Security Audit, Bug Fixing, Dockerization, Production Launch | Week 4 | Day 16 - 20 |
+| Milestone | Phase | Duration | Timeline | Key Deliverables |
+| :--- | :--- | :---: | :--- | :--- |
+| **M1: Foundation** | Planning & Design | 3 Weeks | Weeks 1-3 | PRD, UI/UX High-Fidelity Wireframes, API Contract, DB Schema. |
+| **M2: Core Engine** | Development (Sprint 1-3) | 6 Weeks | Weeks 4-9 | IAM (RBAC), Task CRUD, State Machine Workflow, Basic API. |
+| **M3: Visualization** | Development (Sprint 4-6) | 6 Weeks | Weeks 10-15 | Kanban Board, Dependency Graph, Heatmap Dashboard, Notifications. |
+| **M4: Infrastructure** | DevOps & Scaling | 3 Weeks | Weeks 16-18 | CI/CD Pipelines, K8s Orchestration, Redis Caching, Load Testing. |
+| **M5: Hardening** | QA & UAT | 2 Weeks | Weeks 19-20 | Bug Fixes, User Acceptance Testing, Final Production Deployment. |
 
 ---
 
 ## 2. Resource Allocation Breakdown
-To keep the budget lean and the team focused, resources are allocated by specialty. 
+To ensure the project doesn't stall, we are allocating a specialized lean team.
 
-| Role | Primary Responsibility | Allocation | Key Focus Area |
-| :--- | :--- | :--- | :--- |
-| **Business Analyst** | Requirement Definition | 20% (W1-W4) | Acceptance criteria & User stories. |
-| **Solution Architect**| Technical Oversight | 15% (W1-W4) | JWT Strategy, DB indexing, Security audits. |
-| **UI/UX Designer** | Visuals & Wireframes | 50% (W1-W2) | Responsive layouts, Accessibility (WCAG). |
-| **Backend Developer** | Server-side Logic | 100% (W1-W3) | API endpoints, Bcrypt, MongoDB, JWT. |
-| **Frontend Developer**| Client-side Logic | 100% (W2-W4) | Form validation, State mgmt, API integration. |
-| **QA Engineer** | Testing & Validation | 60% (W3-W4) | Integration tests, Edge cases, Security testing. |
-| **DevOps Engineer** | Infrastructure | 30% (W1, W4) | Docker Compose, CI/CD, HTTPS Setup. |
+| Role | Primary Responsibilities | Allocation | Key Focus Area |
+| :--- | :--- | :---: | :--- |
+| **Project Manager** | Timeline, Budget, Blocker Removal, Stakeholder Sync | 100% | Project governance and risk mitigation. |
+| **Business Analyst** | Requirements, User Stories, Acceptance Criteria | 50% | Backlog grooming and UAT validation. |
+| **Solution Architect** | System Design, Tech Stack, Performance Oversight | 50% | DB optimization and API consistency. |
+| **Backend Developer** | Node.js/TypeScript, MongoDB, Redis, Auth Logic | 100% | Task engine and RBAC implementation. |
+| **Frontend Developer** | React/TS, Kanban DnD, Data Visualizations | 100% | UX fluidity and dashboard performance. |
+| **DevOps Engineer** | Docker, K8s, CI/CD, Monitoring | 100% | 99.9% Uptime and <2s load time delivery. |
+| **QA Engineer** | Manual/Auto Testing, Load Testing (k6) | 100% | Regression testing and performance benchmarks. |
 
 ---
 
 ## 3. Critical Path Analysis
-The critical path is the sequence of stages that determines the minimum project duration. Any delay here delays the final delivery.
+The critical path represents the sequence of stages that cannot be delayed without delaying the entire project.
 
-**Path: Requirements $\rightarrow$ Backend API $\rightarrow$ Frontend Integration $\rightarrow$ QA $\rightarrow$ Deployment**
+**Critical Path Sequence:**
+`DB Schema Design` $\rightarrow$ `IAM/RBAC Implementation` $\rightarrow$ `Task State Machine Logic` $\rightarrow$ `Kanban Board Integration` $\rightarrow$ `Dependency Graph Logic` $\rightarrow$ `Load Testing/Optimization` $\rightarrow$ `Deployment`.
 
-1.  **Backend API (High Dependency):** The Frontend cannot implement the actual login/registration flow until the API contracts (`/register`, `/login`, `/refresh`) are finalized and functional.
-2.  **JWT Implementation:** The "Refresh Token" logic is the most complex technical piece. If this fails, session persistence (a core requirement) fails.
-3.  **QA Security Sweep:** Because this handles user credentials, the "Hardening" phase is non-negotiable. We cannot skip security testing to meet a deadline.
-
-**Bottleneck Mitigation:** To prevent the Frontend dev from idling in Week 2, they will build the UI using **Mock APIs (JSON Server)** while the Backend dev builds the actual logic.
+*   **Primary Bottleneck:** The **Task State Machine and Dependency Logic**. If the backend logic for "Blocked" tasks or status transitions is flawed, the Frontend cannot build the Kanban or Dependency Graph, stalling the most visible part of the project.
+*   **Secondary Bottleneck:** **Infrastructure Setup**. Since we have a strict <2s load time requirement, the DevOps setup (Redis/CDN) must be integrated *before* final QA, not as an afterthought.
 
 ---
 
 ## 4. Risk-Mitigation Register
 
 | Category | Risk | Impact | Probability | Mitigation Strategy |
-| :--- | :--- | :--- | :--- | :--- |
-| **Security** | Brute-force attacks on login endpoint | High | Medium | Implement `express-rate-limit` and account lockout policies after 5 failed attempts. |
-| **Security** | XSS attacks stealing session tokens | Critical | Low | Use `httpOnly`, `Secure`, and `SameSite=Strict` cookies for Refresh Tokens; avoid `localStorage`. |
-| **Technical** | API/Frontend mismatch (Contract break) | Medium | Medium | Use **TypeScript** interfaces across both stacks to ensure type safety and contract alignment. |
-| **Scope** | "Scope Creep" (e.g., adding Social Login/OAuth) | Medium | High | Strictly adhere to the BRD. Any additions (Google/Facebook login) go into a "Phase 2" backlog. |
-| **UX** | Poor mobile experience/responsiveness | Low | Medium | UI/UX Designer must provide mobile-first Figma mocks; QA to test on 3+ screen sizes. |
-| **Operational** | Database connection leaks or slow queries | Medium | Low | Use MongoDB Atlas for managed scaling and implement proper index on the `email` field. |
+| :--- | :--- | :---: | :---: | :--- |
+| **Technical** | Circular dependencies in tasks causing system crashes. | High | Medium | Implement a Directed Acyclic Graph (DAG) validation on the backend to prevent circular references before saving. |
+| **Performance** | Heatmap/Aggregation queries slowing down with $\ge 10k$ tasks. | High | High | Utilize Redis for cached aggregates and MongoDB aggregation pipelines to avoid full table scans. |
+| **Scope** | "Feature Creep" (adding complex reporting or integrations). | Medium | High | Strict adherence to the PRD. Any new features go to a "Version 2.0" backlog for post-MVP consideration. |
+| **Operational** | DevOps bottleneck delaying the deployment of the core engine. | Medium | Low | Parallelize Infrastructure setup with Backend development using a staged Docker environment. |
+| **Quality** | UX friction in the Kanban drag-and-drop interface. | Medium | Medium | Conduct weekly UI/UX reviews with the BA and a sample user group to refine the "feel" of the interface. |
+
+---
+
+**PM Note:** *This plan focuses on structure over guesswork. By locking the API contract and the State Machine early, we unblock the Frontend and Backend teams to work in parallel, ensuring we hit the 20-week mark without compromising on the "Enterprise" quality standards.*

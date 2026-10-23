@@ -1,120 +1,96 @@
-# Business Requirements Document (BRD): Secure Authentication Module
+# Business Requirements Document (BRD): Enterprise Task Management System (TMS)
 
-**Document Version:** 1.0  
+**Version:** 1.0  
 **Status:** Final  
-**Owner:** Business Analyst  
-**Project Reference:** Secure Authentication Module (Login & Registration)
+**Author:** Business Analyst  
+**Project Manager:** Rose  
 
 ---
 
 ## 1. Executive Summary
-The goal of this module is to provide a secure, scalable, and user-friendly gateway for users to create accounts and authenticate their identity. To prevent "building the wrong thing," this document explicitly defines the boundaries of the MVP: **Email/Password authentication only.** Social logins and multi-factor authentication (MFA) are officially moved to Phase 2 to ensure the critical path (M1-M4) is met.
+The Enterprise Task Management System (TMS) is designed to replace fragmented task tracking with a centralized, scalable platform. The system focuses on three core pillars: **Rigid Governance (RBAC)**, **Visual Workflow (Kanban)**, and **Complex Relationship Mapping (Dependency Tracking)**. The primary goal is to eliminate "blocked" ambiguity and provide leadership with real-time visibility via heatmaps and dashboards.
 
 ---
 
 ## 2. End-to-End User Workflows
 
-### Workflow A: New User Onboarding (Registration)
-1. **Entry:** User lands on the Registration Page.
-2. **Input:** User enters Email, Password, and Password Confirmation.
-3. **Validation:** System checks for email availability and password strength in real-time.
-4. **Submission:** User submits the form.
-5. **Backend Process:** System hashes the password (Bcrypt), saves the user to MongoDB, and generates an initial session.
-6. **Outcome:** User is redirected to the Dashboard/Home page with a "Registration Successful" notification.
+### Workflow A: Task Lifecycle (The Happy Path)
+1. **Creation:** A Project Manager (PM) creates a task, assigns a priority, and assigns it to a Developer.
+2. **Dependency Mapping:** The PM links the task as "Dependent on" a prerequisite task (e.g., "API Design" must be done before "API Implementation").
+3. **Execution:** The Developer moves the task from `To-Do` $\rightarrow$ `In Progress` on the Kanban board.
+4. **Validation:** Once finished, the Developer moves the task to `Review`.
+5. **Completion:** After QA approval, the task moves to `Done`, which automatically triggers a notification to the owner of the dependent task that their blocker is cleared.
 
-### Workflow B: Returning User Access (Login)
-1. **Entry:** User lands on the Login Page.
-2. **Input:** User enters Email and Password.
-3. **Submission:** User submits the form.
-4. **Backend Process:** System verifies credentials, checks for account lockout status, and issues a JWT (Access Token) and an `httpOnly` Refresh Token.
-5. **Outcome:** User is redirected to the protected area of the application.
+### Workflow B: Access Control & Governance
+1. **Onboarding:** An Admin creates a user account and assigns the role `Viewer`.
+2. **Restriction:** The User attempts to drag a task on the Kanban board but finds the action disabled.
+3. **Escalation:** The Admin updates the role to `Editor`; the User can now modify task states but cannot delete the project.
 
 ---
 
-## 3. Detailed Functional Requirements & User Stories
+## 3. Functional Requirements & User Stories
 
-### 3.1 Registration Module
-**Priority: High**
+### Module 1: Identity & Access Management (IAM/RBAC)
+**Goal:** Ensure data integrity and security by restricting actions based on organizational roles.
 
-| User Story ID | User Story | Priority |
-| :--- | :--- | :--- |
-| **US.1** | As a new user, I want to create an account using my email and a password so that I can access the platform's features. | P0 |
-| **US.2** | As a user, I want to see real-time validation errors (e.g., "Invalid email format") so that I can correct my input before submitting. | P1 |
-
-#### Acceptance Criteria for US.1 (Registration Logic)
-**Scenario 1: Successful Registration**
-*   **Given** I am on the registration page
-*   **When** I enter a unique, valid email and a password that meets security criteria
-*   **And** I enter the same password in the confirmation field
-*   **And** I click "Sign Up"
-*   **Then** the system should create my account in the database
-*   **And** I should be redirected to the dashboard with a success message.
-
-**Scenario 2: Duplicate Email Registration**
-*   **Given** an account already exists with the email `user@example.com`
-*   **When** I attempt to register with `user@example.com`
-*   **Then** the system should prevent account creation
-*   **And** display an error message: "An account with this email already exists."
-
-**Scenario 3: Password Mismatch**
-*   **Given** I am filling out the registration form
-*   **When** the "Password" field and "Confirm Password" field do not match
-*   **Then** the "Sign Up" button should remain disabled (or return an error)
-*   **And** a message "Passwords do not match" should be visible.
+| ID | User Story | Priority | Acceptance Criteria (Gherkin) |
+| :--- | :--- | :---: | :--- |
+| **US.1** | As an Admin, I want to assign roles (Admin, Editor, Viewer) to users so that I can control system access. | P0 | **Given** I am logged in as an Admin<br>**When** I navigate to the User Management panel and change a user's role to 'Viewer'<br>**Then** that user should be unable to create or edit tasks. |
+| **US.2** | As a User, I want to be authenticated via a secure login so that my private project data is protected. | P0 | **Given** a user provides invalid credentials<br>**When** they attempt to log in<br>**Then** the system should deny access and display a "Invalid credentials" error message. |
 
 ---
 
-### 3.2 Login Module
-**Priority: High**
+### Module 2: Task Engine & State Machine
+**Goal:** Standardize how tasks move through the lifecycle and prevent illegal state transitions.
 
-| User Story ID | User Story | Priority |
-| :--- | :--- | :--- |
-| **US.3** | As a registered user, I want to log in with my credentials so that I can access my private data. | P0 |
-| **US.4** | As a user, I want my session to persist even if I refresh the page, so I don't have to log in repeatedly. | P0 |
+| ID | User Story | Priority | Acceptance Criteria (Gherkin) |
+| :--- | :--- | :---: | :--- |
+| **US.3** | As a User, I want to create, read, update, and delete (CRUD) tasks so that I can manage my workload. | P0 | **Given** I have 'Editor' permissions<br>**When** I submit a task with a Title, Description, and Assignee<br>**Then** the task should be saved to the DB and appear in the project list. |
+| **US.4** | As a PM, I want the system to enforce a state machine (e.g., To-Do $\rightarrow$ In Progress $\rightarrow$ Review $\rightarrow$ Done) to maintain process discipline. | P1 | **Given** a task is in 'To-Do' status<br>**When** I attempt to move it directly to 'Done' (skipping Review)<br>**Then** the system should block the transition and prompt the user to follow the workflow. |
 
-#### Acceptance Criteria for US.3 (Login Logic)
-**Scenario 1: Successful Login**
-*   **Given** I have a registered account
-*   **When** I enter my correct email and password
-*   **And** I click "Login"
-*   **Then** the system should authenticate my credentials
-*   **And** store the JWT in memory and the Refresh Token in a `Secure`, `httpOnly` cookie.
+---
 
-**Scenario 2: Invalid Credentials**
-*   **Given** I enter an incorrect password or an unregistered email
-*   **When** I click "Login"
-*   **Then** the system should deny access
-*   **And** display a generic error: "Invalid email or password" (to prevent account enumeration).
+### Module 3: Dependency Tracking & DAG Logic
+**Goal:** Manage complex project interdependencies and prevent system crashes due to circular references.
 
-#### Acceptance Criteria for US.4 (Session Persistence)
-**Scenario 1: Token Refresh on Page Load**
-*   **Given** I have a valid Refresh Token stored in my browser cookies
-*   **When** I refresh the browser or return to the site after closing the tab
-*   **Then** the frontend should call the `/refresh` endpoint
-*   **And** the system should issue a new Access Token without requiring me to log in again.
+| ID | User Story | Priority | Acceptance Criteria (Gherkin) |
+| :--- | :--- | :---: | :--- |
+| **US.5** | As a PM, I want to mark a task as "Blocked by" another task so that the team knows the prerequisite. | P1 | **Given** Task B is dependent on Task A<br>**When** Task A is not in 'Done' status<br>**Then** Task B should be visually flagged as 'Blocked' and restricted from moving to 'In Progress'. |
+| **US.6** | As a System, I want to prevent circular dependencies (A $\rightarrow$ B $\rightarrow$ A) to avoid infinite loops and crashes. | P0 | **Given** Task A depends on Task B<br>**When** I attempt to make Task B depend on Task A<br>**Then** the system should reject the update and return a "Circular Dependency Detected" error. |
+
+---
+
+### Module 4: Visualization (Kanban & Dashboards)
+**Goal:** Provide high-level visibility and an intuitive interface for daily operations.
+
+| ID | User Story | Priority | Acceptance Criteria (Gherkin) |
+| :--- | :--- | :---: | :--- |
+| **US.7** | As a Developer, I want to drag-and-drop tasks between columns on a Kanban board for rapid status updates. | P1 | **Given** I am on the Kanban view<br>**When** I drag a task card from 'In Progress' to 'Review'<br>**Then** the task state should update in the backend and reflect across all users' screens in real-time. |
+| **US.8** | As an Executive, I want a Heatmap Dashboard showing task density and bottlenecks. | P2 | **Given** a project with 100+ tasks<br>**When** I load the Heatmap Dashboard<br>**Then** I should see a visual representation of which statuses have the highest volume of tasks. |
 
 ---
 
 ## 4. Edge Cases & Technical Constraints
 
-### 4.1 Security Edge Cases
-*   **Brute Force Protection:** If a user/IP fails login 5 consecutive times, the account must be locked for 15 minutes.
-*   **SQL/NoSQL Injection:** All inputs must be sanitized; the Backend must use parameterized queries or ODM (Mongoose) validation.
-*   **Password Strength:** Passwords must be a minimum of 8 characters, including at least one number and one special character.
-*   **Token Theft:** Access tokens must have a short lifespan (e.g., 15 minutes). Refresh tokens must be revoked upon logout.
+### 4.1 Edge Case Handling
+*   **The "Ghost" Assignee:** If a user is deleted from the system, all tasks assigned to them must be automatically transitioned to "Unassigned" and a notification sent to the Project Manager.
+*   **Bulk State Change:** If a "Parent" task is marked as cancelled, the system must prompt the user to either cancel all "Child" (dependent) tasks or re-assign their dependencies.
+*   **Concurrent Edits:** If two users edit the same task simultaneously, the system must implement *Optimistic Locking* (the second user to save is notified that the task was updated and must refresh).
 
-### 4.2 UX Edge Cases
-*   **Network Latency:** The "Submit" button must enter a `loading` state (disabled) once clicked to prevent duplicate API calls.
-*   **Empty Fields:** Form submission must be blocked if any required field is empty, with a "Field Required" tooltip.
-*   **Case Sensitivity:** Email addresses must be treated as case-insensitive (e.g., `User@Example.com` is the same as `user@example.com`).
+### 4.2 Non-Functional Requirements
+*   **Performance:** Dashboard aggregation queries must execute in $< 2$ seconds for datasets up to 10,000 tasks (Requirement: Redis Caching).
+*   **Availability:** The system must maintain 99.9% uptime via K8s orchestration.
+*   **Scalability:** The MongoDB schema must be indexed by `projectId` and `status` to prevent full table scans during Kanban renders.
 
 ---
 
-## 5. Summary Table for Development Team
+## 5. Traceability Matrix (Critical Path Alignment)
 
-| Feature | Frontend Requirement | Backend Requirement | Security Requirement |
-| :--- | :--- | :--- | :--- |
-| **Registration** | Email, Pwd, Confirm Pwd fields; Validation | `/register` endpoint; Bcrypt hashing | MongoDB Index on `email` (Unique) |
-| **Login** | Email, Pwd fields; Loading state | `/login` endpoint; JWT issuance | Rate-limiting on `/login` |
-| **Session** | Interceptor for 401 errors | `/refresh` endpoint; Cookie handling | `httpOnly`, `Secure` cookies |
-| **Validation** | Regex for Email; Pwd matching | Schema validation (Joi/Zod) | Input sanitization |
+| Critical Path Element | Linked User Story | Risk Mitigation |
+| :--- | :--- | :--- |
+| **DB Schema Design** | US.3, US.6 | DAG implementation for dependencies. |
+| **IAM/RBAC** | US.1, US.2 | Strict role-based API middleware. |
+| **State Machine** | US.4, US.5 | Backend validation of status transitions. |
+| **Kanban Integration** | US.7 | WebSocket/Real-time updates for DnD. |
+| **Dependency Graph** | US.5, US.6 | Directed Acyclic Graph (DAG) validation logic. |
+| **Load Testing** | US.8 | k6 testing on Redis cached aggregates. |

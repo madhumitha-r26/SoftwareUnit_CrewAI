@@ -7,25 +7,28 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          600: '#2563EB',
-          700: '#1D4ED8',
+          DEFAULT: '#2563EB',
+          dark: '#1D4ED8',
         },
-        neutral: {
-          900: '#111827',
-          500: '#6B7280',
-        },
-        error: {
-          500: '#DC2626',
-        },
-        success: {
-          500: '#16A34A',
-        },
-        surface: {
-          100: '#F9FAFB',
-        },
+        success: '#059669',
+        warning: '#D97706',
+        danger: '#DC2626',
+        surface: '#F8FAFC',
+        border: '#E2E8F0',
+        slate: {
+          900: '#0F172A',
+          800: '#1E293B',
+          700: '#334155',
+          600: '#475569',
+          500: '#64748B',
+          400: '#94A3B8',
+          300: '#CBD5E1',
+          200: '#E2E8F0',
+          100: '#F1F5F9',
+        }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
       },
     },
   },

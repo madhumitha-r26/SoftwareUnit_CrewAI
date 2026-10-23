@@ -1,36 +1,56 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './AuthContext';
-import LoginForm from './LoginForm';
-import RegistrationForm from './RegistrationForm';
-import Dashboard from './Dashboard';
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Layout } from './components/Layout';
+import { KanbanBoard } from './pages/KanbanBoard';
+import { Dashboard } from './pages/Dashboard';
+import { Login } from './pages/Login';
+import axios from 'axios';
 
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
-};
+export const AuthContext = createContext(null);
 
-function App() {
+const API_BASE = 'http://localhost:5000/api';
+
+export default function App() {
+  const [auth, setAuth] = useState(() => {
+    const user = localStorage.getItem('tms_user');
+    const token = localStorage.getItem('tms_token');
+    return user && token ? { user: JSON.parse(user), token } : null;
+  });
+
+  const login = (userData, token) => {
+    localStorage.setItem('tms_user', JSON.stringify(userData));
+    localStorage.setItem('tms_token', token);
+    setAuth({ user: userData, token });
+  };
+
+  const logout = () => {
+    localStorage.clear();
+    setAuth(null);
+  };
+
+  // Setup axios interceptor for JWT
+  axios.interceptors.request.use((config) => {
+    if (auth?.token) {
+      config.headers.Authorization = `Bearer ${auth.token}`;
+    }
+    return config;
+  });
+
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <AuthContext.Provider value={{ auth, login, logout }}>
+      <Router>
         <Routes>
-          <Route path="/login" element={<LoginForm />} />
-          <Route path="/register" element={<RegistrationForm />} />
+          <Route path="/login" element={!auth ? <Login /> : <Navigate to="/" />} />
+          <Route 
+            path="/" 
+            element={auth ? <Layout><KanbanBoard /></Layout> : <Navigate to="/login" />} 
+          />
           <Route 
             path="/dashboard" 
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } 
+            element={auth ? <Layout><Dashboard /></Layout> : <Navigate to="/login" />} 
           />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      </Router>
+    </AuthContext.Provider>
   );
 }
-
-export default App;

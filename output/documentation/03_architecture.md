@@ -1,192 +1,192 @@
-# High-Level Architecture (HLA): Secure Authentication Module
+# High-Level Architecture (HLA): Enterprise Task Management System (TMS)
 
-**Project Reference:** Secure Authentication Module (MERN Stack)  
-**Architect:** Solution Architect  
-**Status:** Final Design  
-
----
-
-## 1. System Architecture Overview
-The system follows a decoupled Client-Server architecture. The frontend is a Single Page Application (SPA) built with React.js and Tailwind CSS, communicating via a RESTful API with a Node.js/Express.js backend. Persistence is handled by MongoDB.
+## 1. System Overview
+The Enterprise Task Management System (TMS) is a professional-grade project orchestration platform. It employs a **MERN stack** (MongoDB, Express, React, Node) to handle complex task lifecycles, rigid role-based access control (RBAC), and a Directed Acyclic Graph (DAG) for dependency management.
 
 ### 1.1 Component Interaction Diagram
 ```mermaid
 graph TD
-    User((User))
-    
-    subgraph Frontend [Frontend: React.js + Tailwind CSS]
-        UI[Auth Pages: Login/Register]
-        State[Auth Context/State]
-        APIClient[Axios Interceptor]
+    subgraph Client_Layer [Frontend: React.js + Tailwind CSS]
+        UI[UI Components] --> State[Redux/Context State]
+        State --> API_Client[Axios/WebSocket Client]
     end
 
-    subgraph Backend [Backend: Node.js + Express.js]
-        Router[API Gateway/Router]
-        Middleware[Auth/Rate-Limit Middleware]
-        Logic[Auth Controller/Service]
-        Security[Bcrypt / JWT Utility]
+    subgraph Gateway_Layer [API Gateway / Load Balancer]
+        LB[Nginx/Ingress]
     end
 
-    subgraph Database [Persistence: MongoDB]
-        UserColl[(Users Collection)]
+    subgraph Logic_Layer [Backend: Node.js + Express.js]
+        LB --> AuthMW[Auth & RBAC Middleware]
+        AuthMW --> TaskCtrl[Task Controller]
+        AuthMW --> UserCtrl[User Controller]
+        TaskCtrl --> DAG_Engine[DAG Validation Engine]
+        TaskCtrl --> StateMachine[State Machine Validator]
+        TaskCtrl --> Cache[Redis Cache - Optional/Req for Heatmap]
     end
 
-    User --> UI
-    UI --> State
-    State --> APIClient
-    APIClient --> Router
-    Router --> Middleware
-    Middleware --> Logic
-    Logic --> Security
-    Logic --> UserColl
-    UserColl --> Logic
-    Logic --> APIClient
+    subgraph Persistence_Layer [Database: MongoDB]
+        TaskCtrl --> TaskDB[(Tasks Collection)]
+        UserCtrl --> UserDB[(Users Collection)]
+        TaskDB --- Indexes[Indexes: projectId, status]
+    end
+
+    API_Client <--> LB
+    TaskCtrl <--> Socket[Socket.io for Real-time Kanban]
+    Socket <--> UI
 ```
 
 ---
 
-## 2. Frontend Design (React.js & Tailwind CSS)
+## 2. Frontend Architecture (React.js & Tailwind CSS)
 
-### 2.1 Component Structure
-- **`AuthLayout`**: Wrapper providing consistent styling and centering for auth forms.
-- **`RegistrationForm`**: 
-    - State-driven validation (regex for email, length/special char for password).
-    - Comparison logic for `password` vs `confirmPassword`.
-    - Submit button `loading` state to prevent duplicate POSTs.
-- **`LoginForm`**: 
-    - Email/Password inputs.
-    - Error handling for generic "Invalid email or password" messages.
-- **`AuthProvider` (Context API)**: 
-    - Manages the `accessToken` in memory.
-    - Handles the `refresh` logic on application mount.
+### 2.1 Design Philosophy
+*   **Atomic Design:** Components split into Atoms (Buttons, Inputs), Molecules (TaskCard), and Organisms (KanbanBoard).
+*   **State Management:** Use of React Context for Auth and Redux Toolkit for the global Task state to ensure "Optimistic Updates" during Drag-and-Drop.
+*   **Styling:** Utility-first approach via Tailwind CSS for high-performance rendering and responsive design.
 
-### 2.2 Styling Strategy
-- **Framework**: Tailwind CSS.
-- **UI Pattern**: Responsive centering using `flex items-center justify-center min-h-screen`.
-- **Validation UI**: Red border-rings on input fields with absolute positioned error text for real-time feedback.
+### 2.2 Key Views
+*   **Kanban Board:** A column-based view utilizing `react-beautiful-dnd` for task movement.
+*   **User Management Panel:** Admin-only view for role assignments.
+*   **Heatmap Dashboard:** Visual representation of task density using `Chart.js` or `Recharts`.
+*   **Task Detail Modal:** Detailed view for mapping dependencies (Blocking/Blocked-by).
 
 ---
 
-## 3. Backend Design (Node.js & Express.js)
+## 3. Backend Architecture (Node.js & Express.js)
 
 ### 3.1 Service Boundaries
-- **Route Layer**: Defines API endpoints and maps them to controllers.
-- **Middleware Layer**: 
-    - `rateLimiter`: Prevents brute force (max 5 attempts/15 mins).
-    - `validateSchema`: Uses Joi/Zod to ensure payloads match the contract.
-    - `authenticateJWT`: Validates the Access Token for protected routes.
-- **Controller Layer**: Orchestrates the business logic (e.g., "Check if user exists $\rightarrow$ Hash Pwd $\rightarrow$ Save").
-- **Data Access Layer (Mongoose)**: Handles MongoDB queries and schema enforcement.
+*   **Auth Service:** Handles JWT issuance, password hashing (bcrypt), and session validation.
+*   **RBAC Middleware:** Intercepts requests to verify if the user's role (`Admin`, `Editor`, `Viewer`) permits the action.
+*   **Task Engine:** Manages CRUD operations and implements the **State Machine** (validating transitions like `To-Do` $\rightarrow$ `In Progress`).
+*   **Dependency Engine:** Implements DFS (Depth First Search) algorithms to detect circular dependencies before persisting links.
 
-### 3.2 Security Implementation
-- **Password Hashing**: `bcryptjs` with a salt round of 12.
-- **Token Strategy**: 
-    - **Access Token**: Short-lived (15m), sent in JSON response, stored in JS memory.
-    - **Refresh Token**: Long-lived (7d), stored in `httpOnly`, `Secure`, `SameSite=Strict` cookie.
-- **Case Sensitivity**: All emails converted to `.toLowerCase()` before database entry and lookup.
+### 3.2 State Machine Logic
+The backend enforces a strict transition map:
+*   `To-Do` $\rightarrow$ `In Progress` (Allowed if no dependencies are blocking)
+*   `In Progress` $\rightarrow$ `Review`
+*   `Review` $\rightarrow$ `Done`
+*   *Illegal:* `To-Do` $\rightarrow$ `Done` (Blocked by API)
 
 ---
 
-## 4. MongoDB Data Model
+## 4. Data Models (MongoDB)
 
 ### 4.1 User Schema
-**Collection:** `users`
+```javascript
+{
+  _id: ObjectId,
+  username: { type: String, unique: true, required: true },
+  password: { type: String, required: true }, // Hashed
+  role: { type: String, enum: ['Admin', 'Editor', 'Viewer'], default: 'Viewer' },
+  email: { type: String, required: true }
+}
+```
 
-| Field | Type | Constraints | Description |
-| :--- | :--- | :--- | :--- |
-| `_id` | ObjectId | Primary Key | Unique Identifier |
-| `email` | String | Unique, Indexed, Required | User's unique email (lowercase) |
-| `password` | String | Required | Bcrypt hashed password |
-| `loginAttempts` | Number | Default: 0 | Track failed attempts for lockout |
-| `lockUntil` | Date | Optional | Timestamp when account unlocks |
-| `createdAt` | Date | Default: Date.now | Audit trail |
-| `updatedAt` | Date | Default: Date.now | Audit trail |
+### 4.2 Task Schema
+```javascript
+{
+  _id: ObjectId,
+  title: { type: String, required: true },
+  description: String,
+  status: { type: String, enum: ['To-Do', 'In Progress', 'Review', 'Done'], index: true },
+  priority: { type: String, enum: ['Low', 'Medium', 'High', 'Critical'] },
+  assignee: { type: ObjectId, ref: 'User', index: true },
+  projectId: { type: ObjectId, index: true },
+  dependencies: [{ type: ObjectId, ref: 'Task' }], // Tasks that MUST be 'Done' first
+  version: { type: Number, default: 0 }, // For Optimistic Locking
+  createdAt: Date,
+  updatedAt: Date
+}
+```
 
 ---
 
 ## 5. API Contracts
 
-### 5.1 Registration
-`POST /api/auth/register`
-- **Request Body**:
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "Password123!",
-    "confirmPassword": "Password123!"
-  }
-  ```
-- **Success Response (201 Created)**:
-  ```json
-  { "message": "Registration successful", "userId": "..." }
-  ```
-- **Error Responses**:
-    - `400 Bad Request`: Validation failure (password mismatch/weak password).
-    - `409 Conflict`: Email already exists.
+### 5.1 Authentication & IAM
+| Endpoint | Method | Role | Description | Payload | Response |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `/api/auth/login` | POST | All | Authenticate user | `{user, pass}` | `{token, user}` |
+| `/api/users/:id/role`| PATCH | Admin | Update user role | `{role}` | `{updatedUser}` |
 
-### 5.2 Login
-`POST /api/auth/login`
-- **Request Body**:
-  ```json
-  { "email": "user@example.com", "password": "Password123!" }
-  ```
-- **Success Response (200 OK)**:
-  - **Body**: `{ "accessToken": "eyJ...", "user": { "email": "..." } }`
-  - **Cookie**: `Set-Cookie: refreshToken=...; HttpOnly; Secure; SameSite=Strict`
-- **Error Responses**:
-    - `401 Unauthorized`: Invalid credentials.
-    - `423 Locked`: Account locked due to brute force.
+### 5.2 Task Management
+| Endpoint | Method | Role | Description | Payload | Response |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `/api/tasks` | POST | Editor+ | Create task | `{title, desc, ...}` | `TaskObject` |
+| `/api/tasks/:id` | PATCH | Editor+ | Update status/data | `{status, ...}` | `TaskObject` |
+| `/api/tasks/:id/dep` | POST | Editor+ | Add dependency | `{dependsOnId}` | `TaskObject` |
+| `/api/tasks/stats` | GET | All | Heatmap data | N/A | `{status: count}` |
 
-### 5.3 Token Refresh
-`POST /api/auth/refresh`
-- **Request**: No body; sends `refreshToken` cookie.
-- **Success Response (200 OK)**:
-  - **Body**: `{ "accessToken": "new_eyJ..." }`
-- **Error Response**:
-    - `401 Unauthorized`: Refresh token expired or invalid.
-
-### 5.4 Logout
-`POST /api/auth/logout`
-- **Success Response (200 OK)**:
-  - **Cookie**: `Set-Cookie: refreshToken=; Max-Age=0`
+### 5.3 Error Codes
+*   `403 Forbidden`: RBAC failure (e.g., Viewer attempting to edit).
+*   `409 Conflict`: Circular Dependency detected or Optimistic Locking version mismatch.
+*   `422 Unprocessable Entity`: State machine violation (e.g., skipping Review).
 
 ---
 
-## 6. Data Flow
+## 6. Data Flow (Critical Paths)
 
-1. **Registration Flow**: `Frontend (Validation)` $\rightarrow$ `POST /register` $\rightarrow$ `Middleware (Schema Check)` $\rightarrow$ `Service (Bcrypt Hash)` $\rightarrow$ `MongoDB (Save)` $\rightarrow$ `Frontend (Redirect)`.
-2. **Login Flow**: `Frontend` $\rightarrow$ `POST /login` $\rightarrow$ `Middleware (Rate Limit)` $\rightarrow$ `Service (Compare Hash)` $\rightarrow$ `JWT Utility (Issue Pair)` $\rightarrow$ `Response (JSON + Cookie)`.
-3. **Persistence Flow**: `Frontend (App Mount)` $\rightarrow$ `POST /refresh` $\rightarrow$ `Backend (Verify Cookie)` $\rightarrow$ `Response (New Access Token)`.
+### 6.1 Dependency Update Flow (Preventing Cycles)
+1. **Request:** PM requests `Task B` to depend on `Task A`.
+2. **Validation:** Backend triggers `DependencyEngine`.
+3. **Algorithm:** Perform a Recursive DFS starting from `Task A`. If `Task B` is encountered in the traversal, a cycle exists.
+4. **Outcome:** If cycle found $\rightarrow$ return `409 Conflict`. Else $\rightarrow$ persist to MongoDB.
+
+### 6.2 Real-time Kanban Flow
+1. **Action:** Developer drags card to `Review`.
+2. **Client:** Sends `PATCH /api/tasks/:id` and optimistically updates UI.
+3. **Server:** Validates state transition $\rightarrow$ Updates DB $\rightarrow$ Emits `task_updated` via **Socket.io**.
+4. **Sync:** All other connected clients receive event and shift the card on their screens.
 
 ---
 
 ## 7. Docker Deployment Boundaries
 
 ### 7.1 Container Strategy
-- **`frontend-container`**: 
-    - Build: Node.js image $\rightarrow$ `npm run build` $\rightarrow$ Nginx (to serve static files).
-    - Port: 80.
-- **`backend-container`**: 
-    - Build: Node.js Alpine image.
-    - Port: 5000.
-    - Env Vars: `MONGO_URI`, `JWT_SECRET`, `REFRESH_SECRET`, `PORT`.
-- **`mongodb-container`**: 
-    - Image: `mongo:latest`.
-    - Volume: `/data/db` (Persistent volume for data).
-    - Port: 27017.
+We utilize a multi-container architecture orchestrated via `docker-compose` (development) and K8s (production).
 
-### 7.2 Network Topology
-- Internal Docker Bridge Network.
-- **Backend** connects to **MongoDB** via `mongodb://mongodb:27017/auth_db`.
-- **Frontend** communicates with **Backend** via an Nginx reverse proxy or direct API URL.
+*   **`frontend-container`**: Nginx serving the production build of the React app.
+*   **`backend-container`**: Node.js runtime executing the Express app.
+*   **`mongodb-container`**: MongoDB 6.0+ with persistent volume mounts.
+*   **`redis-container`**: Cache for heatmap aggregation and session management.
+
+### 7.2 Docker Compose Structure
+```yaml
+services:
+  frontend:
+    build: ./frontend
+    ports: ["80:80"]
+    depends_on: [backend]
+  backend:
+    build: ./backend
+    ports: ["5000:5000"]
+    environment:
+      - MONGO_URI=mongodb://mongo:27017/tms
+      - REDIS_URL=redis://redis:6379
+    depends_on: [mongo, redis]
+  mongo:
+    image: mongo:latest
+    volumes: ["mongo-data:/data/db"]
+  redis:
+    image: redis:alpine
+volumes:
+  mongo-data:
+```
 
 ---
 
 ## 8. Non-Functional Requirements (NFRs)
 
-| Category | Requirement | Implementation |
-| :--- | :--- | :--- |
-| **Scalability** | Stateless Backend | JWTs ensure the backend doesn't store session state; easily scale horizontally with a Load Balancer. |
-| **Security** | Defense in Depth | `httpOnly` cookies prevent XSS token theft; Bcrypt prevents rainbow table attacks; Rate limiting prevents brute force. |
-| **Latency** | Response Time | MongoDB indexing on `email` ensures $O(1)$ lookup time for authentication. |
-| **Reliability** | Persistence | Docker volumes ensure database state persists across container restarts. |
+### 8.1 Scalability & Performance
+*   **Database Indexing:** Compound indexes on `(projectId, status)` to ensure Kanban loads in $O(1)$ or $O(\log n)$ rather than $O(n)$.
+*   **Caching:** Dashboard aggregation (Heatmap) is cached in Redis with a 5-minute TTL to prevent expensive MongoDB `$group` operations on 10k+ records.
+*   **Latency:** API response target $< 200ms$ for standard CRUD.
+
+### 8.2 Security
+*   **JWT:** Stateless authentication using `HttpOnly` cookies to prevent XSS.
+*   **Input Validation:** `express-validator` to sanitize all inputs and prevent NoSQL injection.
+*   **RBAC:** Middleware-level role checks applied to every sensitive route.
+
+### 8.3 Reliability
+*   **Optimistic Locking:** The `version` field in the Task schema prevents "Lost Updates" by checking `where version = current_version` during updates.
+*   **Orchestration:** K8s Liveness and Readiness probes ensure the Node.js pod is restarted if the event loop freezes.

@@ -1,52 +1,103 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { authController } from '../src/controllers/authController';
-import User from '../src/models/User';
-import jwt from '../src/utils/jwt';
+const request = require('supertest');
+const mongoose = require('mongoose');
+const { app } = require('../src/server'); // Assuming app is exported from server.js
+const User = require('../src/models/schemas').User;
+const Task = require('../src/models/schemas').Task;
 
-vi.mock('../src/models/User');
-vi.mock('../src/utils/jwt');
+describe('TMS Backend Integration Tests', () => {
+    let adminToken;
+    let editorToken;
+    let viewerToken;
 
-describe('Auth Controller - Registration', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    beforeAll(async () => {
+        // Setup DB connection if not handled by server.js
+        if (mongoose.connection.readyState === 0) {
+            await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/tms_test_db');
+        }
 
-  it('should successfully register a new user', async () => {
-    const mockUser = { email: 'test@example.com', password: 'Password123!' };
-    User.findOne.mockResolvedValue(null);
-    User.prototype.save = vi.fn().mockResolvedValue({ ...mockUser, _id: '123' });
+        // Seed Users
+        await User.deleteMany({});
+        await Task.deleteMany({});
+        
+        const admin = await User.create({ username: 'admin', password: 'hashed_password', role: 'Admin' });
+        const editor = await User.create({ username: 'editor', password: 'hashed_password', role: 'Editor' });
+        const viewer = await User.create({ username: 'viewer', password: 'hashed_password', role: 'Viewer' });
 
-    const req = { body: mockUser };
-    const res = { 
-      status: vi.fn().mockReturnThis(), 
-      json: vi.fn() 
-    };
+        // Mock tokens (In real scenario, call /api/auth/login)
+        adminToken = 'mock-admin-jwt';
+        editorToken = 'mock-editor-jwt';
+        viewerToken = 'mock-viewer-jwt';
+    });
 
-    await authController.register(req, res);
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'User registered successfully' }));
-  });
+    afterAll(async () => {
+        await mongoose.connection.close();
+    });
 
-  it('should return error if email already exists', async () => {
-    User.findOne.mockResolvedValue({ email: 'test@example.com' });
-    
-    const req = { body: { email: 'test@example.com', password: 'Password123!' } };
-    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    describe('RBAC - US.1', () => {
+        it('should prevent Viewer from creating a task', async () => {
+            const res = await request(app)
+                .post('/api/tasks')
+                .set('Authorization', `Bearer ${viewerToken}`)
+                .send({ title: 'Viewer Task', description: 'Should fail', status: 'To-Do' });
+            
+            expect(res.status).toBe(403);
+        });
 
-    await authController.register(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'An account with this email already exists.' }));
-  });
-});
+        it('should allow Editor to create a task', async () => {
+            const res = await request(app)
+                .post('/api/tasks')
+                .set('Authorization', `Bearer ${editorToken}`)
+                .send({ title: 'Editor Task', description: 'Should pass', status: 'To-Do' });
+            
+            expect(res.status).toBe(201);
+        });
+    });
 
-describe('Auth Controller - Login', () => {
-  it('should deny access for invalid credentials', async () => {
-    User.findOne.mockResolvedValue(null);
-    const req = { body: { email: 'wrong@example.com', password: 'WrongPassword1' } };
-    const res = { status: vi.fn().mockReturnThis(), json: vi.fn() };
+    describe('State Machine - US.4', () => {
+        it('should block transition from To-Do directly to Done', async () => {
+            const task = await Task.create({ title: 'State Test', status: 'To-Do', version: 0 });
+            const res = await request(app)
+                .patch(`/api/tasks/${task._id}`)
+                .set('Authorization', `Bearer ${editorToken}`)
+                .send({ status: 'Done' });
+            
+            expect(res.status).toBe(400);
+            expect(res.body.message).toMatch(/follow the workflow/i);
+        });
+    });
 
-    await authController.login(req, res);
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ message: 'Invalid email or password' }));
-  });
+    describe('DAG Logic - US.6', () => {
+        it('should detect and reject circular dependencies', async () => {
+            const taskA = await Task.create({ title: 'Task A', status: 'To-Do' });
+            const taskB = await Task.create({ title: 'Task B', status: 'To-Do', dependencies: [taskA._id] });
+
+            const res = await request(app)
+                .patch(`/api/tasks/${taskA._id}`)
+                .set('Authorization', `Bearer ${editorToken}`)
+                .send({ dependencies: [taskB._id] });
+            
+            expect(res.status).toBe(409);
+            expect(res.body.message).toBe('Circular Dependency Detected');
+        });
+    });
+
+    describe('Optimistic Locking - Edge Case', () => {
+        it('should prevent lost updates via versioning', async () => {
+            const task = await Task.create({ title: 'Lock Test', status: 'To-Do', version: 0 });
+            
+            // User 1 updates
+            await request(app)
+                .patch(`/api/tasks/${task._id}`)
+                .set('Authorization', `Bearer ${editorToken}`)
+                .send({ title: 'Updated by User 1', version: 0 });
+
+            // User 2 tries to update using old version 0
+            const res = await request(app)
+                .patch(`/api/tasks/${task._id}`)
+                .set('Authorization', `Bearer ${editorToken}`)
+                .send({ title: 'Updated by User 2', version: 0 });
+            
+            expect(res.status).toBe(409); // Conflict
+        });
+    });
 });
